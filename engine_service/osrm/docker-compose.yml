@@ -1,0 +1,23 @@
+services:
+  osrm:
+    image: osrm/osrm-backend:latest
+    container_name: osrm-libya
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./data:/data
+    command: >
+      sh -c "
+        cd /data &&
+        osrm-extract -p /opt/car.lua libya-latest.osm.pbf &&
+        osrm-partition libya-latest.osrm &&
+        osrm-customize libya-latest.osrm &&
+        osrm-routed --algorithm mld libya-latest.osrm
+      "
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/route/v1/driving/13.1913,32.8872;13.2000,32.9000?overview=false"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s

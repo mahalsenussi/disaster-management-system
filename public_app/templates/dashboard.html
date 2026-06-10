@@ -1,0 +1,2073 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Disaster Operations Dashboard</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            width: 320px;
+            background: #1a1a2e;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+        
+        .sidebar-header {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #333;
+        }
+        
+        .sidebar-header h1 {
+            font-size: 20px;
+            font-weight: 600;
+            color: #e94560;
+        }
+        
+        .sidebar-header p {
+            font-size: 12px;
+            color: #888;
+            margin-top: 5px;
+        }
+        
+        /* Sidebar tabs */
+        .sidebar-tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+        }
+        
+        .sidebar-tab {
+            flex: 1;
+            padding: 8px 5px;
+            background: transparent;
+            border: none;
+            color: #888;
+            font-size: 11px;
+            cursor: pointer;
+            text-align: center;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+        
+        .sidebar-tab:hover {
+            background: #16213e;
+            color: #fff;
+        }
+        
+        .sidebar-tab.active {
+            background: #e94560;
+            color: #fff;
+        }
+        
+        /* Tab content */
+        .tab-content {
+            display: none;
+            flex: 1;
+            overflow-y: auto;
+        }
+        
+        .tab-content.active {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .tab-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .tab-header h2 {
+            font-size: 14px;
+            font-weight: 600;
+            color: #e94560;
+        }
+        
+        .btn-create {
+            background: #e94560;
+            color: #fff;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+        }
+        
+        .btn-create:hover {
+            background: #d63850;
+        }
+        
+        .stats-section {
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: #16213e;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 3px solid #e94560;
+        }
+        
+        .stat-card h3 {
+            font-size: 24px;
+            font-weight: 700;
+            color: #fff;
+        }
+        
+        .stat-card p {
+            font-size: 12px;
+            color: #888;
+            margin-top: 5px;
+        }
+        
+        .incident-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+        
+        .incident-list h2 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #e94560;
+        }
+        
+        /* List items */
+        .list-item {
+            background: #16213e;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .list-item:hover {
+            background: #1f2947;
+        }
+        
+        .list-item h4 {
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .list-item p {
+            font-size: 11px;
+            color: #888;
+        }
+        
+        .list-item .meta {
+            font-size: 10px;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .list-item-actions {
+            margin-top: 8px;
+            display: flex;
+            gap: 5px;
+        }
+        
+        .list-item-actions button {
+            background: #3498db;
+            color: #fff;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        
+        /* Stats cards for reports */
+        .report-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        
+        .report-stat {
+            background: #16213e;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        
+        .report-stat .value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #e94560;
+        }
+        
+        .report-stat .label {
+            font-size: 11px;
+            color: #888;
+            margin-top: 5px;
+        }
+        
+        .incident-item {
+            background: #16213e;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .incident-item:hover {
+            background: #1f2947;
+        }
+        
+        .incident-item.active {
+            border: 2px solid #e94560;
+        }
+        
+        .incident-item h4 {
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .incident-item p {
+            font-size: 11px;
+            color: #888;
+        }
+        
+        .severity-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: 600;
+            margin-top: 5px;
+        }
+        
+        .severity-high {
+            background: #e94560;
+            color: #fff;
+        }
+        
+        .severity-medium {
+            background: #f39c12;
+            color: #fff;
+        }
+        
+        .severity-low {
+            background: #27ae60;
+            color: #fff;
+        }
+        
+        /* Map container */
+        .map-container {
+            flex: 1;
+            position: relative;
+        }
+        
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* Controls */
+        .map-controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .control-btn {
+            background: #fff;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: background 0.2s;
+        }
+        
+        .control-btn:hover {
+            background: #f0f0f0;
+        }
+        
+        .control-btn.primary {
+            background: #e94560;
+            color: #fff;
+        }
+        
+        .control-btn.primary:hover {
+            background: #d63850;
+        }
+        
+        /* Popup styles */
+        .leaflet-popup-content-wrapper {
+            border-radius: 8px;
+        }
+        
+        .leaflet-popup-content {
+            margin: 10px;
+        }
+        
+        .popup-content h3 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        .popup-content p {
+            font-size: 12px;
+            margin-bottom: 5px;
+            color: #666;
+        }
+        
+        .popup-content button {
+            background: #e94560;
+            color: #fff;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-top: 10px;
+            width: 100%;
+        }
+        
+        .popup-content button:hover {
+            background: #d63850;
+        }
+        
+        /* Team selector */
+        .team-selector {
+            margin-top: 10px;
+        }
+        
+        .team-selector select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        
+        /* Loading overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+        
+        .loading-overlay.active {
+            display: flex;
+        }
+        
+        .loading-spinner {
+            background: #fff;
+            padding: 20px 30px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        
+        /* Status indicator */
+        .status-indicator {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: #fff;
+            padding: 10px 15px;
+            border-radius: 6px;
+            font-size: 12px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+        
+        .status-indicator.online {
+            color: #27ae60;
+        }
+        
+        .status-indicator.offline {
+            color: #e94560;
+        }
+        
+        /* Incident creation modal */
+        .incident-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            z-index: 3000;
+            display: none;
+            min-width: 300px;
+        }
+        
+        .incident-modal.active {
+            display: block;
+        }
+        
+        .incident-modal h3 {
+            margin-bottom: 15px;
+            color: #1a1a2e;
+        }
+        
+        .incident-modal label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .incident-modal input,
+        .incident-modal select {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+        
+        .incident-modal .modal-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .incident-modal button {
+            flex: 1;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        
+        .incident-modal .btn-primary {
+            background: #e94560;
+            color: #fff;
+        }
+        
+        .incident-modal .btn-secondary {
+            background: #ddd;
+            color: #333;
+        }
+        
+        /* Incident detail panel */
+        .incident-detail-panel {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            z-index: 3000;
+            display: none;
+            min-width: 350px;
+        }
+        
+        .incident-detail-panel.active {
+            display: block;
+        }
+        
+        .incident-detail-panel h3 {
+            margin-bottom: 15px;
+            color: #1a1a2e;
+        }
+        
+        .incident-detail-panel .detail-row {
+            margin-bottom: 10px;
+            font-size: 13px;
+        }
+        
+        .incident-detail-panel .detail-label {
+            font-weight: 600;
+            color: #666;
+        }
+        
+        .incident-detail-panel .detail-value {
+            color: #333;
+        }
+        
+        .incident-detail-panel .btn-assign {
+            background: #e94560;
+            color: #fff;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            width: 100%;
+            margin-top: 15px;
+        }
+        
+        .incident-detail-panel .btn-close {
+            background: #ddd;
+            color: #333;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            margin-top: 10px;
+            width: 100%;
+        }
+        
+        /* Modal overlay */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 2500;
+            display: none;
+        }
+        
+        .modal-overlay.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h1>Disaster Ops</h1>
+            <p>Real-time Operations Dashboard</p>
+        </div>
+        
+        <div class="sidebar-tabs">
+            <button class="sidebar-tab active" onclick="switchTab('incidents')">Incidents</button>
+            <button class="sidebar-tab" onclick="switchTab('teams')">Teams</button>
+            <button class="sidebar-tab" onclick="switchTab('points')">Points</button>
+            <button class="sidebar-tab" onclick="switchTab('reports')">Reports</button>
+        </div>
+        
+        <!-- Incidents Tab -->
+        <div class="tab-content active" id="tab-incidents">
+            <div class="tab-header">
+                <h2>Incidents</h2>
+                <button class="btn-create" onclick="openIncidentModalFromButton()">+ New</button>
+            </div>
+            <div id="incidents-list">
+                <!-- Incidents will be loaded here -->
+            </div>
+        </div>
+        
+        <!-- Teams Tab -->
+        <div class="tab-content" id="tab-teams">
+            <div class="tab-header">
+                <h2>Teams</h2>
+                <button class="btn-create" onclick="enableTeamCreation()">+ New</button>
+            </div>
+            <div id="teams-list">
+                <!-- Teams will be loaded here -->
+            </div>
+        </div>
+        
+        <!-- Points Tab -->
+        <div class="tab-content" id="tab-points">
+            <div class="tab-header">
+                <h2>Points</h2>
+                <button class="btn-create" onclick="enablePointCreation()">+ New</button>
+            </div>
+            <div id="points-list">
+                <!-- Points will be loaded here -->
+            </div>
+        </div>
+        
+        <!-- Reports Tab -->
+        <div class="tab-content" id="tab-reports">
+            <div class="tab-header">
+                <h2>Reports</h2>
+            </div>
+            <div id="reports-content">
+                <!-- Reports will be loaded here -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Map Container -->
+    <div class="map-container">
+        <div id="map"></div>
+        
+        <div class="map-controls">
+            <button class="control-btn primary" onclick="refreshData()">Refresh</button>
+            <button class="control-btn" onclick="clearRoutes()">Clear Routes</button>
+        </div>
+        
+        <div class="status-indicator" id="status-indicator">
+            <span id="status-text">Connecting...</span>
+        </div>
+    </div>
+    
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-spinner">Loading...</div>
+    </div>
+    
+    <!-- Modal Overlay -->
+    <div class="modal-overlay" id="modal-overlay"></div>
+    
+    <!-- Incident Creation Modal -->
+    <div class="incident-modal" id="incident-modal">
+        <h3>Create Incident</h3>
+        <label for="incident-type">Type</label>
+        <select id="incident-type">
+            <option value="Fire">Fire</option>
+            <option value="Medical">Medical Emergency</option>
+            <option value="Flood">Flood</option>
+            <option value="Traffic">Traffic Accident</option>
+            <option value="Structural">Structural Collapse</option>
+            <option value="Other">Other</option>
+        </select>
+        
+        <label for="incident-severity">Severity (1-5)</label>
+        <select id="incident-severity">
+            <option value="1">1 - Low</option>
+            <option value="2">2 - Moderate</option>
+            <option value="3">3 - High</option>
+            <option value="4">4 - Severe</option>
+            <option value="5">5 - Critical</option>
+        </select>
+        
+        <input type="hidden" id="incident-lat">
+        <input type="hidden" id="incident-lng">
+        
+        <div class="modal-buttons">
+            <button class="btn-secondary" onclick="closeIncidentModal()">Cancel</button>
+            <button class="btn-primary" onclick="createIncident()">Create</button>
+        </div>
+    </div>
+    
+    <!-- Incident Detail Panel -->
+    <div class="incident-detail-panel" id="incident-detail-panel">
+        <h3>Incident Details</h3>
+        <input type="hidden" id="edit-incident-id">
+        
+        <div class="detail-row">
+            <span class="detail-label">Type:</span>
+            <select id="edit-incident-type" style="padding: 4px; border-radius: 3px; border: 1px solid #ddd;">
+                <option value="Fire">Fire</option>
+                <option value="Medical">Medical Emergency</option>
+                <option value="Flood">Flood</option>
+                <option value="Traffic">Traffic Accident</option>
+                <option value="Structural">Structural Collapse</option>
+                <option value="Other">Other</option>
+            </select>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Severity:</span>
+            <select id="edit-incident-severity" style="padding: 4px; border-radius: 3px; border: 1px solid #ddd;">
+                <option value="1">1 - Low</option>
+                <option value="2">2 - Moderate</option>
+                <option value="3">3 - High</option>
+                <option value="4">4 - Severe</option>
+                <option value="5">5 - Critical</option>
+            </select>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Status:</span>
+            <span class="detail-value" id="detail-status"></span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Location:</span>
+            <span class="detail-value" id="detail-location"></span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Assign Team:</span>
+            <select id="assign-team-select" style="padding: 4px; border-radius: 3px; border: 1px solid #ddd; width: 100%;">
+                <option value="">-- Select Team --</option>
+            </select>
+        </div>
+        <button class="btn-assign" onclick="updateIncident()" style="background: #3498db;">Update Incident</button>
+        <button class="btn-assign" onclick="assignSelectedTeam()">Assign Selected Team</button>
+        <button class="btn-assign" onclick="createRouteForIncident()" style="background: #f39c12;">Create Route (Requires Engine)</button>
+        <button class="btn-assign" onclick="markResolved()" style="background: #27ae60; margin-top: 10px;">Mark Resolved</button>
+        <button class="btn-assign" onclick="deleteIncident()" style="background: #e74c3c; margin-top: 10px;">Delete</button>
+        <button class="btn-close" onclick="closeDetailPanel()">Close</button>
+    </div>
+    
+    <!-- Team Creation Modal -->
+    <div class="incident-modal" id="team-modal">
+        <h3>Create Team</h3>
+        <label for="team-name">Name</label>
+        <input type="text" id="team-name" placeholder="Team name">
+        
+        <p style="font-size: 11px; color: #888; margin-bottom: 15px;">Click on the map to set team location</p>
+        
+        <input type="hidden" id="team-lat">
+        <input type="hidden" id="team-lng">
+        
+        <div class="modal-buttons">
+            <button class="btn-secondary" onclick="closeTeamModal()">Cancel</button>
+            <button class="btn-primary" onclick="createTeam()">Create</button>
+        </div>
+    </div>
+    
+    <!-- Team Edit Modal -->
+    <div class="incident-modal" id="team-edit-modal">
+        <h3>Edit Team</h3>
+        <input type="hidden" id="edit-team-id">
+        
+        <label for="edit-team-name">Name</label>
+        <input type="text" id="edit-team-name" placeholder="Team name">
+        
+        <label for="edit-team-status">Status</label>
+        <select id="edit-team-status">
+            <option value="available">Available</option>
+            <option value="busy">Busy</option>
+            <option value="offline">Offline</option>
+        </select>
+        
+        <label for="edit-team-color">Color</label>
+        <input type="color" id="edit-team-color" value="#3498db">
+        
+        <label for="edit-team-icon">Icon</label>
+        <select id="edit-team-icon">
+            <option value="🚑">🚑 Ambulance</option>
+            <option value="🚒">🚒 Fire Truck</option>
+            <option value="🚓">🚓 Police</option>
+            <option value="🚁">🚁 Helicopter</option>
+            <option value="🚐">🚐 Van</option>
+            <option value="🚙">🚙 Car</option>
+        </select>
+        
+        <label for="edit-team-gps">GPS Tracking</label>
+        <select id="edit-team-gps">
+            <option value="0">Disabled (Manual)</option>
+            <option value="1">Enabled (GPS)</option>
+        </select>
+        
+        <div class="modal-buttons">
+            <button class="btn-secondary" onclick="closeTeamEditModal()">Cancel</button>
+            <button class="btn-primary" onclick="updateTeam()">Save</button>
+        </div>
+    </div>
+    
+    <!-- Point Creation Modal -->
+    <div class="incident-modal" id="point-modal">
+        <h3>Create Point</h3>
+        <label for="point-name">Name</label>
+        <input type="text" id="point-name" placeholder="Point name">
+        
+        <label for="point-type">Type</label>
+        <select id="point-type" onchange="toggleCustomType()">
+            <option value="hospital">Hospital</option>
+            <option value="shelter">Shelter</option>
+            <option value="warehouse">Warehouse</option>
+            <option value="police_station">Police Station</option>
+            <option value="fire_station">Fire Station</option>
+            <option value="school">School</option>
+            <option value="lrc">LRC (Local Response Center)</option>
+            <option value="clinic">Clinic</option>
+            <option value="embassy">Embassy</option>
+            <option value="government">Government Building</option>
+            <option value="mosque">Mosque</option>
+            <option value="market">Market</option>
+            <option value="other">Other (Custom)</option>
+        </select>
+        
+        <label for="point-custom-type" id="custom-type-label" style="display: none;">Custom Type</label>
+        <input type="text" id="point-custom-type" placeholder="Enter custom type" style="display: none;">
+        
+        <p style="font-size: 11px; color: #888; margin-bottom: 15px;">Click on the map to set point location</p>
+        
+        <input type="hidden" id="point-lat">
+        <input type="hidden" id="point-lng">
+        
+        <div class="modal-buttons">
+            <button class="btn-secondary" onclick="closePointModal()">Cancel</button>
+            <button class="btn-primary" onclick="createPoint()">Create</button>
+        </div>
+    </div>
+    
+    <!-- Point Edit Modal -->
+    <div class="incident-modal" id="point-edit-modal">
+        <h3>Edit Point</h3>
+        <input type="hidden" id="edit-point-id">
+        
+        <label for="edit-point-name">Name</label>
+        <input type="text" id="edit-point-name" placeholder="Point name">
+        
+        <label for="edit-point-type">Type</label>
+        <select id="edit-point-type" onchange="toggleEditCustomType()">
+            <option value="hospital">Hospital</option>
+            <option value="shelter">Shelter</option>
+            <option value="warehouse">Warehouse</option>
+            <option value="police_station">Police Station</option>
+            <option value="fire_station">Fire Station</option>
+            <option value="school">School</option>
+            <option value="lrc">LRC (Local Response Center)</option>
+            <option value="clinic">Clinic</option>
+            <option value="embassy">Embassy</option>
+            <option value="government">Government Building</option>
+            <option value="mosque">Mosque</option>
+            <option value="market">Market</option>
+            <option value="other">Other (Custom)</option>
+        </select>
+        
+        <label for="edit-point-custom-type" id="edit-custom-type-label" style="display: none;">Custom Type</label>
+        <input type="text" id="edit-point-custom-type" placeholder="Enter custom type" style="display: none;">
+        
+        <div class="modal-buttons">
+            <button class="btn-secondary" onclick="closePointEditModal()">Cancel</button>
+            <button class="btn-primary" onclick="updatePoint()">Save</button>
+        </div>
+    </div>
+    
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <script>
+        // Global variables
+        let map;
+        let incidents = [];
+        let teams = [];
+        let routes = [];
+        let points = [];
+        let incidentMarkers = {};
+        let teamMarkers = {};
+        let routeLines = {};
+        let pointMarkers = {};
+        let selectedIncident = null;
+        let selectedTeam = null;
+        let selectedPoint = null;
+        let clickedLocation = null;
+        let currentTab = 'incidents';
+        let teamCreationMode = false;
+        let pointCreationMode = false;
+        
+        // Initialize map
+        function initMap() {
+            map = L.map('map').setView([32.8872, 13.1913], 8); // Libya center
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+            
+            // Add map click handler for creation based on current tab
+            map.on('click', function(e) {
+                clickedLocation = e.latlng;
+                if (currentTab === 'incidents') {
+                    openIncidentModal(e.latlng.lat, e.latlng.lng);
+                } else if (currentTab === 'points' && pointCreationMode) {
+                    openPointModal(e.latlng.lat, e.latlng.lng);
+                    pointCreationMode = false;
+                } else if (currentTab === 'teams' && teamCreationMode) {
+                    openTeamModal(e.latlng.lat, e.latlng.lng);
+                    teamCreationMode = false;
+                }
+            });
+        }
+        
+        // Load data from API
+        async function loadData() {
+            showLoading(true);
+            
+            try {
+                const [incidentsRes, teamsRes, routesRes, pointsRes, reportsRes] = await Promise.all([
+                    fetch('/api/incidents'),
+                    fetch('/api/teams'),
+                    fetch('/api/routes'),
+                    fetch('/api/points'),
+                    fetch('/api/reports/summary')
+                ]);
+                
+                incidents = await incidentsRes.json();
+                teams = await teamsRes.json();
+                routes = await routesRes.json();
+                points = await pointsRes.json();
+                const reports = await reportsRes.json();
+                
+                updateMap();
+                updateSidebar();
+                updateReports(reports);
+                updateStatus(true);
+                
+            } catch (error) {
+                console.error('Error loading data:', error);
+                updateStatus(false);
+            }
+            
+            showLoading(false);
+        }
+        
+        // Update map with markers and routes
+        function updateMap() {
+            // Clear existing markers
+            Object.values(incidentMarkers).forEach(marker => map.removeLayer(marker));
+            Object.values(teamMarkers).forEach(marker => map.removeLayer(marker));
+            Object.values(routeLines).forEach(line => map.removeLayer(line));
+            Object.values(pointMarkers).forEach(marker => map.removeLayer(marker));
+            
+            incidentMarkers = {};
+            teamMarkers = {};
+            routeLines = {};
+            pointMarkers = {};
+            
+            // Add incident markers with severity-based colors
+            incidents.forEach(incident => {
+                if (incident.status === 'active' || incident.status === 'open' || incident.status === 'assigned') {
+                    const severity = parseInt(incident.severity) || 3;
+                    const color = severity >= 3 ? '#e94560' : '#f39c12'; // Red for 3-5, orange for 1-2
+                    
+                    const marker = L.circleMarker([incident.lat, incident.lng], {
+                        radius: 10,
+                        fillColor: color,
+                        color: '#fff',
+                        weight: 2,
+                        opacity: 1,
+                        fillOpacity: 0.8
+                    }).addTo(map);
+                    
+                    marker.on('click', (e) => {
+                        L.DomEvent.stopPropagation(e);
+                        showIncidentDetail(incident);
+                    });
+                    
+                    incidentMarkers[incident.id] = marker;
+                }
+            });
+            
+            // Add team markers
+            teams.forEach(team => {
+                // Use computed GPS state from backend
+                const gpsState = team.gps_state || 'manual';
+                
+                // Determine color and draggable based on state
+                let markerColor, stateLabel, isDraggable;
+                
+                switch (gpsState) {
+                    case 'gps_active':
+                        markerColor = '#27ae60'; // Green
+                        stateLabel = 'GPS ACTIVE';
+                        isDraggable = false;
+                        break;
+                    case 'gps_lost':
+                        markerColor = '#f39c12'; // Orange
+                        stateLabel = 'GPS LOST';
+                        isDraggable = false;
+                        break;
+                    default: // manual
+                        markerColor = team.color || '#3498db'; // Blue
+                        stateLabel = 'MANUAL';
+                        isDraggable = true;
+                }
+                
+                const marker = L.marker([team.lat, team.lng], {
+                    draggable: isDraggable,
+                    icon: L.divIcon({
+                        className: 'team-marker',
+                        html: `<div style="background: ${markerColor}; width: 30px; height: 30px; border-radius: 50%; border: 3px solid #fff; display: flex; align-items: center; justify-content: center; font-size: 16px; position: relative;">${team.icon || '🚑'}<span style="position: absolute; bottom: -18px; left: 50%; transform: translateX(-50%); font-size: 8px; background: #fff; padding: 1px 4px; border-radius: 3px; color: #333; white-space: nowrap;">${stateLabel}</span></div>`,
+                        iconSize: [30, 30],
+                        iconAnchor: [15, 15]
+                    })
+                }).addTo(map);
+                
+                // Format last updated time
+                let lastUpdatedText = 'N/A';
+                if (team.last_updated) {
+                    const lastUpdate = new Date(team.last_updated);
+                    const now = new Date();
+                    const diffSeconds = (now - lastUpdate) / 1000;
+                    
+                    if (diffSeconds < 60) {
+                        lastUpdatedText = `${Math.floor(diffSeconds)}s ago`;
+                    } else if (diffSeconds < 3600) {
+                        lastUpdatedText = `${Math.floor(diffSeconds / 60)}m ago`;
+                    } else {
+                        lastUpdatedText = lastUpdate.toLocaleTimeString();
+                    }
+                }
+                
+                marker.bindPopup(`
+                    <div class="popup-content">
+                        <h3>${team.name}</h3>
+                        <p>Status: ${team.status}</p>
+                        <p>Mode: ${stateLabel}</p>
+                        <p>Last Update: ${lastUpdatedText}</p>
+                        <p>Lat: ${team.lat.toFixed(4)}</p>
+                        <p>Lng: ${team.lng.toFixed(4)}</p>
+                    </div>
+                `);
+                
+                // Add drag event handler for manual teams only
+                if (isDraggable) {
+                    marker.on('dragend', async function(e) {
+                        const newPosition = e.target.getLatLng();
+                        const newLat = newPosition.lat;
+                        const newLng = newPosition.lng;
+                        
+                        // Update marker position immediately
+                        marker.setLatLng([newLat, newLng]);
+                        
+                        // Send update to backend
+                        try {
+                            const response = await fetch(`/api/teams/${team.id}`, {
+                                method: 'PATCH',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    lat: newLat,
+                                    lng: newLng
+                                })
+                            });
+                            
+                            if (response.ok) {
+                                await loadData();
+                            }
+                        } catch (error) {
+                            console.error('Error updating team location:', error);
+                        }
+                    });
+                }
+                
+                teamMarkers[team.id] = marker;
+            });
+            
+            // Add route lines
+            routes.forEach(route => {
+                if (route.status === 'active' && route.path && route.path.length > 0) {
+                    const line = L.polyline(route.path, {
+                        color: '#3498db',
+                        weight: 3,
+                        opacity: 0.7,
+                        dashArray: '10, 10'
+                    }).addTo(map);
+                    
+                    const eta = route.duration ? (route.duration / 60).toFixed(1) : 'N/A';
+                    const distance = route.distance ? route.distance.toFixed(2) : 'N/A';
+                    
+                    line.bindPopup(`
+                        <div class="popup-content">
+                            <h3>Route</h3>
+                            <p>ETA: ${eta} min</p>
+                            <p>Distance: ${distance} km</p>
+                            <p>Source: ${route.source || 'N/A'}</p>
+                        </div>
+                    `);
+                    
+                    routeLines[route.id] = line;
+                }
+            });
+            
+            // Add point markers
+            points.forEach(point => {
+                const typeColors = {
+                    'hospital': '#27ae60',
+                    'shelter': '#9b59b6',
+                    'warehouse': '#3498db',
+                    'police_station': '#3498db',
+                    'fire_station': '#e74c3c',
+                    'school': '#f39c12',
+                    'lrc': '#1abc9c',
+                    'clinic': '#27ae60',
+                    'embassy': '#9b59b6',
+                    'government': '#34495e',
+                    'mosque': '#16a085',
+                    'market': '#e67e22'
+                };
+                
+                const typeIcons = {
+                    'hospital': '🏥',
+                    'shelter': '🏠',
+                    'warehouse': '📦',
+                    'police_station': '👮',
+                    'fire_station': '🚒',
+                    'school': '🏫',
+                    'lrc': '🏢',
+                    'clinic': '⚕️',
+                    'embassy': '🏛️',
+                    'government': '🏛️',
+                    'mosque': '🕌',
+                    'market': '🏪'
+                };
+                
+                const color = typeColors[point.type] || '#95a5a6';
+                const icon = typeIcons[point.type] || '📍';
+                
+                const marker = L.marker([point.lat, point.lng], {
+                    icon: L.divIcon({
+                        className: 'point-marker',
+                        html: `<div style="background: ${color}; width: 24px; height: 24px; border-radius: 50%; border: 2px solid #fff; display: flex; align-items: center; justify-content: center; font-size: 12px;">${icon}</div>`,
+                        iconSize: [24, 24],
+                        iconAnchor: [12, 12]
+                    })
+                }).addTo(map);
+                
+                marker.bindPopup(`
+                    <div class="popup-content">
+                        <h3>${point.name}</h3>
+                        <p>Type: ${point.type}</p>
+                        <p>Lat: ${point.lat.toFixed(4)}</p>
+                        <p>Lng: ${point.lng.toFixed(4)}</p>
+                    </div>
+                `);
+                
+                pointMarkers[point.id] = marker;
+            });
+        }
+        
+        // Incident creation modal functions
+        function openIncidentModal(lat, lng) {
+            document.getElementById('incident-lat').value = lat;
+            document.getElementById('incident-lng').value = lng;
+            document.getElementById('incident-modal').classList.add('active');
+            document.getElementById('modal-overlay').classList.add('active');
+        }
+        
+        function openIncidentModalFromButton() {
+            // Open modal without coordinates, user will click on map
+            document.getElementById('incident-modal').classList.add('active');
+            document.getElementById('modal-overlay').classList.add('active');
+        }
+        
+        function closeIncidentModal() {
+            document.getElementById('incident-modal').classList.remove('active');
+            document.getElementById('modal-overlay').classList.remove('active');
+            document.getElementById('incident-type').value = 'Fire';
+            document.getElementById('incident-severity').value = '3';
+        }
+        
+        async function createIncident() {
+            const type = document.getElementById('incident-type').value;
+            const severity = document.getElementById('incident-severity').value;
+            const lat = parseFloat(document.getElementById('incident-lat').value);
+            const lng = parseFloat(document.getElementById('incident-lng').value);
+            
+            if (!type || !severity || isNaN(lat) || isNaN(lng)) {
+                return;
+            }
+            
+            showLoading(true);
+            closeIncidentModal();
+            
+            try {
+                const response = await fetch('/api/incidents', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        type: type,
+                        severity: parseInt(severity),
+                        lat: lat,
+                        lng: lng
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    await loadData();
+                } else {
+                    console.error('Error creating incident:', result.error);
+                }
+            } catch (error) {
+                console.error('Error creating incident:', error);
+            }
+            
+            showLoading(false);
+        }
+        
+        // Incident actions
+        async function markResolved() {
+            if (!selectedIncident || !selectedIncident.id) {
+                console.error('No incident selected');
+                return;
+            }
+            
+            const incidentId = selectedIncident.id;
+            showLoading(true);
+            closeDetailPanel();
+            
+            try {
+                const response = await fetch(`/api/incidents/${incidentId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        status: 'resolved'
+                    })
+                });
+                
+                if (response.ok) {
+                    await loadData();
+                }
+            } catch (error) {
+                console.error('Error marking resolved:', error);
+            }
+            
+            showLoading(false);
+        }
+        
+        async function deleteIncident() {
+            if (!selectedIncident || !selectedIncident.id) {
+                console.error('No incident selected');
+                return;
+            }
+            
+            const incidentId = selectedIncident.id;
+            showLoading(true);
+            closeDetailPanel();
+            
+            try {
+                const response = await fetch(`/api/incidents/${incidentId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    await loadData();
+                }
+            } catch (error) {
+                console.error('Error deleting incident:', error);
+            }
+            
+            showLoading(false);
+        }
+        
+        async function updateIncident() {
+            const incidentId = document.getElementById('edit-incident-id').value;
+            const type = document.getElementById('edit-incident-type').value;
+            const severity = document.getElementById('edit-incident-severity').value;
+            
+            if (!incidentId || !type || !severity) {
+                return;
+            }
+            
+            showLoading(true);
+            
+            try {
+                const response = await fetch(`/api/incidents/${incidentId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        type: type,
+                        severity: parseInt(severity)
+                    })
+                });
+                
+                if (response.ok) {
+                    await loadData();
+                    closeDetailPanel();
+                }
+            } catch (error) {
+                console.error('Error updating incident:', error);
+            }
+            
+            showLoading(false);
+        }
+        
+        // Incident detail panel functions
+        function showIncidentDetail(incident) {
+            selectedIncident = incident;
+            
+            document.getElementById('edit-incident-id').value = incident.id;
+            document.getElementById('edit-incident-type').value = incident.type;
+            document.getElementById('edit-incident-severity').value = incident.severity;
+            document.getElementById('detail-status').textContent = incident.status;
+            document.getElementById('detail-location').textContent = 
+                `${incident.lat.toFixed(4)}, ${incident.lng.toFixed(4)}`;
+            
+            // Populate team dropdown
+            const teamSelect = document.getElementById('assign-team-select');
+            teamSelect.innerHTML = '<option value="">-- Select Team --</option>';
+            teams.forEach(team => {
+                const option = document.createElement('option');
+                option.value = team.id;
+                option.textContent = team.name;
+                if (incident.assigned_team_id === team.id) {
+                    option.selected = true;
+                }
+                teamSelect.appendChild(option);
+            });
+            
+            document.getElementById('incident-detail-panel').classList.add('active');
+            document.getElementById('modal-overlay').classList.add('active');
+        }
+        
+        function closeDetailPanel() {
+            document.getElementById('incident-detail-panel').classList.remove('active');
+            document.getElementById('modal-overlay').classList.remove('active');
+            selectedIncident = null;
+        }
+        
+        // Haversine distance calculation
+        function haversineDistance(lat1, lng1, lat2, lng2) {
+            const R = 6371; // Earth's radius in km
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLng = (lng2 - lng1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLng/2) * Math.sin(dLng/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+        
+        // Find nearest team
+        function findNearestTeam(incidentLat, incidentLng) {
+            const availableTeams = teams.filter(t => t.status === 'available');
+            
+            if (availableTeams.length === 0) {
+                return null;
+            }
+            
+            let nearest = null;
+            let minDistance = Infinity;
+            
+            availableTeams.forEach(team => {
+                const distance = haversineDistance(incidentLat, incidentLng, team.lat, team.lng);
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    nearest = team;
+                }
+            });
+            
+            return nearest;
+        }
+        
+        // Assign nearest team to incident
+        async function assignSelectedTeam() {
+            if (!selectedIncident || !selectedIncident.id) {
+                console.error('No incident selected');
+                return;
+            }
+            
+            const teamId = document.getElementById('assign-team-select').value;
+            if (!teamId) {
+                alert('Please select a team');
+                return;
+            }
+            
+            showLoading(true);
+            
+            try {
+                const response = await fetch(`/api/incidents/${selectedIncident.id}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        assigned_team_id: parseInt(teamId),
+                        status: 'assigned'
+                    })
+                });
+                
+                if (response.ok) {
+                    await loadData();
+                    closeDetailPanel();
+                } else {
+                    console.error('Error assigning team');
+                }
+            } catch (error) {
+                console.error('Error assigning team:', error);
+            }
+            
+            showLoading(false);
+        }
+        
+        async function createRouteForIncident() {
+            if (!selectedIncident || !selectedIncident.id) {
+                console.error('No incident selected');
+                return;
+            }
+            
+            const teamId = document.getElementById('assign-team-select').value;
+            if (!teamId) {
+                alert('Please select a team first');
+                return;
+            }
+            
+            showLoading(true);
+            
+            try {
+                const response = await fetch('/api/routes/generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        team_id: parseInt(teamId),
+                        incident_id: selectedIncident.id
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    await loadData();
+                    alert('Route created successfully');
+                } else {
+                    alert('Error creating route: ' + (result.error || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error creating route:', error);
+                alert('Error creating route: ' + error.message);
+            }
+            
+            showLoading(false);
+        }
+        
+        async function assignNearestTeam() {
+            if (!selectedIncident || !selectedIncident.id) {
+                console.error('No incident selected');
+                return;
+            }
+            
+            const incidentId = selectedIncident.id;
+            const nearestTeam = findNearestTeam(selectedIncident.lat, selectedIncident.lng);
+            
+            if (!nearestTeam) {
+                console.error('No available teams');
+                return;
+            }
+            
+            showLoading(true);
+            closeDetailPanel();
+            
+            try {
+                const response = await fetch('/api/routes/generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        incident_id: incidentId,
+                        team_id: nearestTeam.id
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    await loadData();
+                } else {
+                    console.error('Error generating route:', result.error);
+                }
+            } catch (error) {
+                console.error('Error generating route:', error);
+            }
+            
+            showLoading(false);
+        }
+        
+        // Tab switching
+        function switchTab(tabName) {
+            currentTab = tabName;
+            teamCreationMode = false;
+            pointCreationMode = false;
+            
+            // Update tab buttons
+            document.querySelectorAll('.sidebar-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+        }
+        
+        // Enable team creation mode
+        function enableTeamCreation() {
+            teamCreationMode = true;
+            // Show visual feedback
+            const button = event.target;
+            button.textContent = 'Click Map...';
+            button.style.background = '#27ae60';
+            
+            // Reset after 5 seconds if no click
+            setTimeout(() => {
+                teamCreationMode = false;
+                button.textContent = '+ New';
+                button.style.background = '#e94560';
+            }, 5000);
+        }
+        
+        // Enable point creation mode
+        function enablePointCreation() {
+            pointCreationMode = true;
+            // Show visual feedback
+            const button = event.target;
+            button.textContent = 'Click Map...';
+            button.style.background = '#27ae60';
+            
+            // Reset after 5 seconds if no click
+            setTimeout(() => {
+                pointCreationMode = false;
+                button.textContent = '+ New';
+                button.style.background = '#e94560';
+            }, 5000);
+        }
+        
+        // Team modal functions
+        function openTeamModal(lat, lng) {
+            if (lat && lng) {
+                document.getElementById('team-lat').value = lat;
+                document.getElementById('team-lng').value = lng;
+            }
+            document.getElementById('team-modal').classList.add('active');
+            document.getElementById('modal-overlay').classList.add('active');
+        }
+        
+        function closeTeamModal() {
+            document.getElementById('team-modal').classList.remove('active');
+            document.getElementById('modal-overlay').classList.remove('active');
+            document.getElementById('team-name').value = '';
+            document.getElementById('team-lat').value = '';
+            document.getElementById('team-lng').value = '';
+        }
+        
+        async function createTeam() {
+            const name = document.getElementById('team-name').value;
+            const lat = parseFloat(document.getElementById('team-lat').value);
+            const lng = parseFloat(document.getElementById('team-lng').value);
+            
+            if (!name || isNaN(lat) || isNaN(lng)) {
+                return;
+            }
+            
+            showLoading(true);
+            closeTeamModal();
+            
+            try {
+                const response = await fetch('/api/teams', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name: name,
+                        lat: lat,
+                        lng: lng,
+                        status: 'available'
+                    })
+                });
+                
+                if (response.ok) {
+                    await loadData();
+                }
+            } catch (error) {
+                console.error('Error creating team:', error);
+            }
+            
+            showLoading(false);
+        }
+        
+        // Team edit functions
+        function openTeamEditModal(teamId) {
+            const team = teams.find(t => t.id === teamId);
+            if (!team) return;
+            
+            document.getElementById('edit-team-id').value = team.id;
+            document.getElementById('edit-team-name').value = team.name;
+            document.getElementById('edit-team-status').value = team.status;
+            document.getElementById('edit-team-color').value = team.color || '#3498db';
+            document.getElementById('edit-team-icon').value = team.icon || '🚑';
+            document.getElementById('edit-team-gps').value = team.gps_enabled ? '1' : '0';
+            
+            document.getElementById('team-edit-modal').classList.add('active');
+            document.getElementById('modal-overlay').classList.add('active');
+        }
+        
+        function closeTeamEditModal() {
+            document.getElementById('team-edit-modal').classList.remove('active');
+            document.getElementById('modal-overlay').classList.remove('active');
+        }
+        
+        async function updateTeam() {
+            const teamId = document.getElementById('edit-team-id').value;
+            const name = document.getElementById('edit-team-name').value;
+            const status = document.getElementById('edit-team-status').value;
+            const color = document.getElementById('edit-team-color').value;
+            const icon = document.getElementById('edit-team-icon').value;
+            const gpsEnabled = document.getElementById('edit-team-gps').value === '1' ? 1 : 0;
+            
+            if (!name || !teamId) {
+                return;
+            }
+            
+            showLoading(true);
+            closeTeamEditModal();
+            
+            try {
+                const response = await fetch(`/api/teams/${teamId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name: name,
+                        status: status,
+                        color: color,
+                        icon: icon,
+                        gps_enabled: gpsEnabled
+                    })
+                });
+                
+                if (response.ok) {
+                    await loadData();
+                }
+            } catch (error) {
+                console.error('Error updating team:', error);
+            }
+            
+            showLoading(false);
+        }
+        
+        async function deleteTeam(teamId) {
+            if (!confirm('Are you sure you want to delete this team?')) {
+                return;
+            }
+            
+            showLoading(true);
+            
+            try {
+                const response = await fetch(`/api/teams/${teamId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    await loadData();
+                }
+            } catch (error) {
+                console.error('Error deleting team:', error);
+            }
+            
+            showLoading(false);
+        }
+        
+        // Point modal functions
+        function openPointModal(lat, lng) {
+            if (lat && lng) {
+                document.getElementById('point-lat').value = lat;
+                document.getElementById('point-lng').value = lng;
+            }
+            document.getElementById('point-modal').classList.add('active');
+            document.getElementById('modal-overlay').classList.add('active');
+        }
+        
+        function closePointModal() {
+            document.getElementById('point-modal').classList.remove('active');
+            document.getElementById('modal-overlay').classList.remove('active');
+            document.getElementById('point-name').value = '';
+            document.getElementById('point-type').value = 'hospital';
+            document.getElementById('point-custom-type').value = '';
+            document.getElementById('custom-type-label').style.display = 'none';
+            document.getElementById('point-custom-type').style.display = 'none';
+        }
+        
+        function toggleCustomType() {
+            const typeSelect = document.getElementById('point-type');
+            const customTypeLabel = document.getElementById('custom-type-label');
+            const customTypeInput = document.getElementById('point-custom-type');
+            
+            if (typeSelect.value === 'other') {
+                customTypeLabel.style.display = 'block';
+                customTypeInput.style.display = 'block';
+            } else {
+                customTypeLabel.style.display = 'none';
+                customTypeInput.style.display = 'none';
+            }
+        }
+        
+        function toggleEditCustomType() {
+            const typeSelect = document.getElementById('edit-point-type');
+            const customTypeLabel = document.getElementById('edit-custom-type-label');
+            const customTypeInput = document.getElementById('edit-point-custom-type');
+            
+            if (typeSelect.value === 'other') {
+                customTypeLabel.style.display = 'block';
+                customTypeInput.style.display = 'block';
+            } else {
+                customTypeLabel.style.display = 'none';
+                customTypeInput.style.display = 'none';
+            }
+        }
+        
+        async function createPoint() {
+            const name = document.getElementById('point-name').value;
+            const type = document.getElementById('point-type').value;
+            const customType = document.getElementById('point-custom-type').value;
+            const lat = parseFloat(document.getElementById('point-lat').value);
+            const lng = parseFloat(document.getElementById('point-lng').value);
+            
+            if (!name || !type || isNaN(lat) || isNaN(lng)) {
+                return;
+            }
+            
+            if (type === 'other' && !customType) {
+                return;
+            }
+            
+            const finalType = type === 'other' ? customType : type;
+            
+            showLoading(true);
+            closePointModal();
+            
+            try {
+                const response = await fetch('/api/points', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name: name,
+                        type: finalType,
+                        lat: lat,
+                        lng: lng
+                    })
+                });
+                
+                if (response.ok) {
+                    await loadData();
+                }
+            } catch (error) {
+                console.error('Error creating point:', error);
+            }
+            
+            showLoading(false);
+        }
+        
+        // Point edit functions
+        function openPointEditModal(pointId) {
+            const point = points.find(p => p.id === pointId);
+            if (!point) return;
+            
+            document.getElementById('edit-point-id').value = point.id;
+            document.getElementById('edit-point-name').value = point.name;
+            document.getElementById('edit-point-type').value = point.type;
+            document.getElementById('edit-point-custom-type').value = point.type;
+            
+            // Show custom type field if needed
+            if (point.type && !['hospital', 'shelter', 'warehouse', 'police_station', 'fire_station', 'school', 'lrc', 'clinic', 'embassy', 'government', 'mosque', 'market'].includes(point.type)) {
+                document.getElementById('edit-point-type').value = 'other';
+                document.getElementById('edit-custom-type-label').style.display = 'block';
+                document.getElementById('edit-point-custom-type').style.display = 'block';
+            } else {
+                document.getElementById('edit-custom-type-label').style.display = 'none';
+                document.getElementById('edit-point-custom-type').style.display = 'none';
+            }
+            
+            document.getElementById('point-edit-modal').classList.add('active');
+            document.getElementById('modal-overlay').classList.add('active');
+        }
+        
+        function closePointEditModal() {
+            document.getElementById('point-edit-modal').classList.remove('active');
+            document.getElementById('modal-overlay').classList.remove('active');
+        }
+        
+        async function updatePoint() {
+            const pointId = document.getElementById('edit-point-id').value;
+            const name = document.getElementById('edit-point-name').value;
+            const type = document.getElementById('edit-point-type').value;
+            const customType = document.getElementById('edit-point-custom-type').value;
+            
+            if (!name || !pointId) {
+                return;
+            }
+            
+            if (type === 'other' && !customType) {
+                return;
+            }
+            
+            const finalType = type === 'other' ? customType : type;
+            
+            showLoading(true);
+            closePointEditModal();
+            
+            try {
+                const response = await fetch(`/api/points/${pointId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name: name,
+                        type: finalType
+                    })
+                });
+                
+                if (response.ok) {
+                    await loadData();
+                }
+            } catch (error) {
+                console.error('Error updating point:', error);
+            }
+            
+            showLoading(false);
+        }
+        
+        async function deletePoint(pointId) {
+            if (!confirm('Are you sure you want to delete this point?')) {
+                return;
+            }
+            
+            showLoading(true);
+            
+            try {
+                const response = await fetch(`/api/points/${pointId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    await loadData();
+                }
+            } catch (error) {
+                console.error('Error deleting point:', error);
+            }
+            
+            showLoading(false);
+        }
+        
+        // Update sidebar with tab content
+        function updateSidebar() {
+            // Update incidents list
+            const incidentsList = document.getElementById('incidents-list');
+            incidentsList.innerHTML = '';
+            
+            incidents.forEach(incident => {
+                const item = document.createElement('div');
+                item.className = 'list-item';
+                item.onclick = () => {
+                    const marker = incidentMarkers[incident.id];
+                    if (marker) {
+                        map.panTo([incident.lat, incident.lng]);
+                        showIncidentDetail(incident);
+                    }
+                };
+                
+                const severity = parseInt(incident.severity) || 3;
+                const severityClass = severity >= 3 ? 'severity-high' : 'severity-medium';
+                
+                item.innerHTML = `
+                    <h4>${incident.type}</h4>
+                    <p>Status: ${incident.status}</p>
+                    <div class="meta">
+                        <span class="severity-badge ${severityClass}">Severity: ${incident.severity}</span>
+                    </div>
+                `;
+                
+                incidentsList.appendChild(item);
+            });
+            
+            // Update teams list
+            const teamsList = document.getElementById('teams-list');
+            teamsList.innerHTML = '';
+            
+            teams.forEach(team => {
+                const item = document.createElement('div');
+                item.className = 'list-item';
+                
+                const content = document.createElement('div');
+                content.onclick = () => {
+                    const marker = teamMarkers[team.id];
+                    if (marker) {
+                        map.panTo([team.lat, team.lng]);
+                    }
+                };
+                
+                content.innerHTML = `
+                    <h4>${team.name}</h4>
+                    <p>Status: ${team.status}</p>
+                    <div class="meta">${team.lat.toFixed(4)}, ${team.lng.toFixed(4)}</div>
+                `;
+                
+                const actions = document.createElement('div');
+                actions.className = 'list-item-actions';
+                actions.innerHTML = `
+                    <button onclick="event.stopPropagation(); openTeamEditModal(${team.id})" style="padding: 4px 8px; font-size: 11px; margin-right: 5px;">Edit</button>
+                    <button onclick="event.stopPropagation(); deleteTeam(${team.id})" style="padding: 4px 8px; font-size: 11px; background: #e74c3c;">Delete</button>
+                `;
+                
+                item.appendChild(content);
+                item.appendChild(actions);
+                teamsList.appendChild(item);
+            });
+            
+            // Update points list
+            const pointsList = document.getElementById('points-list');
+            pointsList.innerHTML = '';
+            
+            points.forEach(point => {
+                const item = document.createElement('div');
+                item.className = 'list-item';
+                
+                const content = document.createElement('div');
+                content.onclick = () => {
+                    const marker = pointMarkers[point.id];
+                    if (marker) {
+                        map.panTo([point.lat, point.lng]);
+                    }
+                };
+                
+                content.innerHTML = `
+                    <h4>${point.name}</h4>
+                    <p>Type: ${point.type}</p>
+                    <div class="meta">${point.lat.toFixed(4)}, ${point.lng.toFixed(4)}</div>
+                `;
+                
+                const actions = document.createElement('div');
+                actions.className = 'list-item-actions';
+                actions.innerHTML = `
+                    <button onclick="event.stopPropagation(); openPointEditModal(${point.id})" style="padding: 4px 8px; font-size: 11px; margin-right: 5px;">Edit</button>
+                    <button onclick="event.stopPropagation(); deletePoint(${point.id})" style="padding: 4px 8px; font-size: 11px; background: #e74c3c;">Delete</button>
+                `;
+                
+                item.appendChild(content);
+                item.appendChild(actions);
+                pointsList.appendChild(item);
+            });
+        }
+        
+        // Update reports
+        function updateReports(reports) {
+            const reportsContent = document.getElementById('reports-content');
+            reportsContent.innerHTML = `
+                <div class="report-stats">
+                    <div class="report-stat">
+                        <div class="value">${reports.total_incidents}</div>
+                        <div class="label">Total Incidents</div>
+                    </div>
+                    <div class="report-stat">
+                        <div class="value">${reports.active_incidents}</div>
+                        <div class="label">Active</div>
+                    </div>
+                    <div class="report-stat">
+                        <div class="value">${reports.assigned_incidents}</div>
+                        <div class="label">Assigned</div>
+                    </div>
+                    <div class="report-stat">
+                        <div class="value">${reports.resolved_incidents}</div>
+                        <div class="label">Resolved</div>
+                    </div>
+                    <div class="report-stat">
+                        <div class="value">${reports.total_teams}</div>
+                        <div class="label">Total Teams</div>
+                    </div>
+                    <div class="report-stat">
+                        <div class="value">${reports.available_teams}</div>
+                        <div class="label">Available</div>
+                    </div>
+                    <div class="report-stat">
+                        <div class="value">${reports.deployed_teams}</div>
+                        <div class="label">Deployed</div>
+                    </div>
+                    <div class="report-stat">
+                        <div class="value">${reports.total_points}</div>
+                        <div class="label">Points</div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Update status indicator
+        function updateStatus(online) {
+            const indicator = document.getElementById('status-indicator');
+            const text = document.getElementById('status-text');
+            
+            if (online) {
+                indicator.className = 'status-indicator online';
+                text.textContent = 'Online';
+            } else {
+                indicator.className = 'status-indicator offline';
+                text.textContent = 'Offline';
+            }
+        }
+        
+        // Clear all routes
+        async function clearRoutes() {
+            if (!confirm('Clear all routes?')) return;
+            
+            showLoading(true);
+            
+            try {
+                for (const route of routes) {
+                    await fetch(`/api/routes/${route.id}`, {
+                        method: 'DELETE'
+                    });
+                }
+                
+                await loadData();
+            } catch (error) {
+                alert('Error clearing routes: ' + error.message);
+            }
+            
+            showLoading(false);
+        }
+        
+        // Refresh data
+        function refreshData() {
+            loadData();
+        }
+        
+        // Show/hide loading overlay
+        function showLoading(show) {
+            const overlay = document.getElementById('loading-overlay');
+            if (show) {
+                overlay.classList.add('active');
+            } else {
+                overlay.classList.remove('active');
+            }
+        }
+        
+        // Auto-refresh every 5 seconds
+        setInterval(refreshData, 5000);
+        
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', () => {
+            initMap();
+            loadData();
+        });
+    </script>
+</body>
+</html>
