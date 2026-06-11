@@ -20,7 +20,7 @@ A Flutter mobile application for disaster management teams in Libya. This app in
 - **Libya-specific Routing**: Uses real OpenStreetMap/OSRM data for accurate routing
 
 ### API Integration
-- **Real-time Data**: Connects to `https://info.onlineacademy.com.ly/api`
+- **Real-time Data**: Connects to `https://emergency.onlineacademy.com.ly/api`
 - **Secure Authentication**: Token-based authentication for team access
 - **Location Updates**: Automatic GPS position updates to central system
 
@@ -112,7 +112,7 @@ The app uses the advanced Libya routing system integrated with:
 ### API Base URL
 The app is configured to connect to:
 ```dart
-static const String baseUrl = 'https://info.onlineacademy.com.ly';
+static const String baseUrl = 'https://emergency.onlineacademy.com.ly';
 ```
 
 ### Location Tracking
@@ -171,7 +171,7 @@ flutter drive --target=test_driver/app.dart
 ## 📞 Support
 
 For technical support or questions about the mobile app integration:
-- API Base: `https://info.onlineacademy.com.ly`
+- API Base: `https://emergency.onlineacademy.com.ly`
 - Contact: Development Team
 
 ## 📄 License
