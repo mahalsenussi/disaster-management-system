@@ -732,6 +732,9 @@
     <!-- Team Creation Modal -->
     <div class="incident-modal" id="team-modal">
         <h3>Create Team</h3>
+        <label for="team-number">Team Number</label>
+        <input type="number" id="team-number" placeholder="e.g. 101">
+        
         <label for="team-name">Name</label>
         <input type="text" id="team-name" placeholder="Team name">
         
@@ -750,6 +753,9 @@
     <div class="incident-modal" id="team-edit-modal">
         <h3>Edit Team</h3>
         <input type="hidden" id="edit-team-id">
+        
+        <label for="edit-team-number">Team Number</label>
+        <input type="number" id="edit-team-number" placeholder="e.g. 101">
         
         <label for="edit-team-name">Name</label>
         <input type="text" id="edit-team-name" placeholder="Team name">
@@ -1000,7 +1006,7 @@
                     draggable: isDraggable,
                     icon: L.divIcon({
                         className: 'team-marker',
-                        html: `<div style="background: ${markerColor}; width: 30px; height: 30px; border-radius: 50%; border: 3px solid #fff; display: flex; align-items: center; justify-content: center; font-size: 16px; position: relative;">${team.icon || '🚑'}<span style="position: absolute; bottom: -18px; left: 50%; transform: translateX(-50%); font-size: 8px; background: #fff; padding: 1px 4px; border-radius: 3px; color: #333; white-space: nowrap;">${stateLabel}</span></div>`,
+                        html: `<div style="background: ${markerColor}; width: 30px; height: 30px; border-radius: 50%; border: 3px solid #fff; display: flex; align-items: center; justify-content: center; font-size: 16px; position: relative;">${team.icon || '🚑'}<span style="position: absolute; bottom: -18px; left: 50%; transform: translateX(-50%); font-size: 8px; background: #fff; padding: 1px 4px; border-radius: 3px; color: #333; white-space: nowrap;">${team.team_number ? '#' + team.team_number : stateLabel}</span></div>`,
                         iconSize: [30, 30],
                         iconAnchor: [15, 15]
                     })
@@ -1024,7 +1030,7 @@
                 
                 marker.bindPopup(`
                     <div class="popup-content">
-                        <h3>${team.name}</h3>
+                        <h3>${team.team_number ? '#' + team.team_number + ' - ' : ''}${team.name}</h3>
                         <p>Status: ${team.status}</p>
                         <p>Mode: ${stateLabel}</p>
                         <p>Last Update: ${lastUpdatedText}</p>
@@ -1321,7 +1327,7 @@
             teams.forEach(team => {
                 const option = document.createElement('option');
                 option.value = team.id;
-                option.textContent = team.name;
+                option.textContent = team.team_number ? '#' + team.team_number + ' - ' + team.name : team.name;
                 if (incident.assigned_team_id === team.id) {
                     option.selected = true;
                 }
@@ -1561,12 +1567,14 @@
         function closeTeamModal() {
             document.getElementById('team-modal').classList.remove('active');
             document.getElementById('modal-overlay').classList.remove('active');
+            document.getElementById('team-number').value = '';
             document.getElementById('team-name').value = '';
             document.getElementById('team-lat').value = '';
             document.getElementById('team-lng').value = '';
         }
         
         async function createTeam() {
+            const teamNumber = document.getElementById('team-number').value;
             const name = document.getElementById('team-name').value;
             const lat = parseFloat(document.getElementById('team-lat').value);
             const lng = parseFloat(document.getElementById('team-lng').value);
@@ -1579,17 +1587,21 @@
             closeTeamModal();
             
             try {
+                const payload = {
+                    name: name,
+                    lat: lat,
+                    lng: lng,
+                    status: 'available'
+                };
+                if (teamNumber) {
+                    payload.team_number = parseInt(teamNumber);
+                }
                 const response = await fetch('/api/teams', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({
-                        name: name,
-                        lat: lat,
-                        lng: lng,
-                        status: 'available'
-                    })
+                    body: JSON.stringify(payload)
                 });
                 
                 if (response.ok) {
@@ -1608,6 +1620,7 @@
             if (!team) return;
             
             document.getElementById('edit-team-id').value = team.id;
+            document.getElementById('edit-team-number').value = team.team_number || '';
             document.getElementById('edit-team-name').value = team.name;
             document.getElementById('edit-team-status').value = team.status;
             document.getElementById('edit-team-color').value = team.color || '#3498db';
@@ -1625,6 +1638,7 @@
         
         async function updateTeam() {
             const teamId = document.getElementById('edit-team-id').value;
+            const teamNumber = document.getElementById('edit-team-number').value;
             const name = document.getElementById('edit-team-name').value;
             const status = document.getElementById('edit-team-status').value;
             const color = document.getElementById('edit-team-color').value;
@@ -1639,18 +1653,22 @@
             closeTeamEditModal();
             
             try {
+                const payload = {
+                    name: name,
+                    status: status,
+                    color: color,
+                    icon: icon,
+                    gps_enabled: gpsEnabled
+                };
+                if (teamNumber) {
+                    payload.team_number = parseInt(teamNumber);
+                }
                 const response = await fetch(`/api/teams/${teamId}`, {
                     method: 'PATCH',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({
-                        name: name,
-                        status: status,
-                        color: color,
-                        icon: icon,
-                        gps_enabled: gpsEnabled
-                    })
+                    body: JSON.stringify(payload)
                 });
                 
                 if (response.ok) {
@@ -1917,7 +1935,7 @@
                 };
                 
                 content.innerHTML = `
-                    <h4>${team.name}</h4>
+                    <h4>${team.team_number ? '#' + team.team_number + ' - ' : ''}${team.name}</h4>
                     <p>Status: ${team.status}</p>
                     <div class="meta">${team.lat.toFixed(4)}, ${team.lng.toFixed(4)}</div>
                 `;
@@ -2060,8 +2078,13 @@
             }
         }
         
-        // Auto-refresh every 5 seconds
-        setInterval(refreshData, 5000);
+        // Auto-refresh every 5 seconds, but pause when any modal or detail panel is open
+        setInterval(() => {
+            const anyModalOpen = document.querySelector('.incident-modal.active, .modal-overlay.active, #incident-detail-panel.active');
+            if (!anyModalOpen) {
+                refreshData();
+            }
+        }, 5000);
         
         // Initialize on load
         document.addEventListener('DOMContentLoaded', () => {

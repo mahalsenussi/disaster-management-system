@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS incidents (
 -- Teams table
 CREATE TABLE IF NOT EXISTS teams (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    team_number INTEGER UNIQUE,
     name TEXT NOT NULL,
     lat REAL NOT NULL,
     lng REAL NOT NULL,

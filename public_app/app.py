@@ -333,9 +333,10 @@ def create_team():
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute('''
-        INSERT INTO teams (name, lat, lng, status, color, icon, battery_level, speed, heading, gps_enabled, last_updated)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO teams (team_number, name, lat, lng, status, color, icon, battery_level, speed, heading, gps_enabled, last_updated)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', (
+        data.get('team_number'),
         data.get('name'),
         float(data.get('lat')),
         float(data.get('lng')),
@@ -363,9 +364,10 @@ def update_team(team_id):
     cursor = conn.cursor()
     cursor.execute('''
         UPDATE teams 
-        SET name = ?, lat = ?, lng = ?, status = ?, updated_at = ?
+        SET team_number = ?, name = ?, lat = ?, lng = ?, status = ?, updated_at = ?
         WHERE id = ?
     ''', (
+        data.get('team_number'),
         data.get('name'),
         data.get('lat'),
         data.get('lng'),
@@ -428,6 +430,10 @@ def patch_team(team_id):
         updates.append('name = ?')
         values.append(data.get('name'))
     
+    if 'team_number' in data:
+        updates.append('team_number = ?')
+        values.append(data.get('team_number'))
+    
     if not updates:
         return jsonify({'error': 'No valid fields to update'}), 400
     
@@ -470,13 +476,14 @@ def update_team_location():
     """Update team location via GPS tracking."""
     data = request.get_json()
     
-    # Validate required fields
+    # Validate required fields - accept either team_id (db id) or team_number
     team_id = data.get('team_id')
+    team_number = data.get('team_number')
     lat = data.get('lat')
     lng = data.get('lng')
     
-    if not team_id:
-        return jsonify({'error': 'team_id is required'}), 400
+    if not team_id and not team_number:
+        return jsonify({'error': 'team_id or team_number is required'}), 400
     
     if lat is None or lng is None:
         return jsonify({'error': 'lat and lng are required'}), 400
@@ -489,13 +496,23 @@ def update_team_location():
     conn = get_db()
     cursor = conn.cursor()
     
-    # Check if team exists and has GPS enabled
-    cursor.execute('SELECT id, gps_enabled FROM teams WHERE id = ?', (team_id,))
-    team = cursor.fetchone()
+    # Look up team by team_id first, then by team_number
+    team = None
+    db_team_id = None
+    
+    if team_id:
+        cursor.execute('SELECT id, gps_enabled FROM teams WHERE id = ?', (team_id,))
+        team = cursor.fetchone()
+    
+    if not team and team_number:
+        cursor.execute('SELECT id, gps_enabled FROM teams WHERE team_number = ?', (team_number,))
+        team = cursor.fetchone()
     
     if not team:
         conn.close()
         return jsonify({'error': 'Team not found'}), 404
+    
+    db_team_id = team[0]
     
     # Check if GPS is enabled
     gps_enabled = team[1] if team[1] else 0
@@ -513,7 +530,7 @@ def update_team_location():
         float(lng),
         datetime.now().isoformat(),
         datetime.now().isoformat(),
-        team_id
+        db_team_id
     ))
     
     conn.commit()
@@ -521,7 +538,8 @@ def update_team_location():
     
     return jsonify({
         'message': 'Location updated successfully',
-        'team_id': team_id
+        'team_id': db_team_id,
+        'team_number': team_number or team_id
     })
 
 # Points endpoints
@@ -719,18 +737,20 @@ def generate_route():
         response.raise_for_status()
         route_data = response.json()
         
-        # Store route in database with new schema
+        # Store route in database
+        route_path = json.dumps(route_data.get('path', []))
         cursor.execute('''
-            INSERT INTO routes (incident_id, team_id, path, distance, duration, status, source)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO routes (incident_id, team_id, path, distance, duration, status, source, data)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
             incident_id,
             team_id,
-            json.dumps(route_data.get('path', [])),
+            route_path,
             route_data.get('distance', 0),
             route_data.get('duration', 0),
             'active',
-            route_data.get('source', 'osrm')
+            route_data.get('source', 'osrm'),
+            route_path
         ))
         route_id = cursor.lastrowid
         
