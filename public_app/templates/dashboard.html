@@ -22,6 +22,124 @@
             overflow: hidden;
         }
         
+        /* Top Navigation Bar */
+        .top-bar {
+            position: fixed;
+            top: 0;
+            left: 320px;
+            right: 0;
+            height: 60px;
+            background: #fff;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            z-index: 1001;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .logo-img {
+            height: 45px;
+            width: auto;
+        }
+        
+        .org-name {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1a1a2e;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .user-details {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .username {
+            font-weight: 600;
+            color: #1a1a2e;
+            font-size: 14px;
+        }
+        
+        .role-badge {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+        
+        .role-badge.admin {
+            background: #e94560;
+            color: #fff;
+        }
+        
+        .role-badge.operator {
+            background: #3498db;
+            color: #fff;
+        }
+        
+        .role-badge.regional_admin {
+            background: #9b59b6;
+            color: #fff;
+        }
+        
+        .branch-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .branch-selector label {
+            font-size: 13px;
+            color: #666;
+        }
+        
+        .branch-selector select {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 13px;
+            background: #fff;
+            cursor: pointer;
+        }
+        
+        .logout-btn {
+            padding: 8px 16px;
+            background: transparent;
+            border: 1px solid #e94560;
+            color: #e94560;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        
+        .logout-btn:hover {
+            background: #e94560;
+            color: #fff;
+        }
+        
+        .branch-locked {
+            font-size: 13px;
+            color: #666;
+            padding: 8px 12px;
+            background: #f5f5f5;
+            border-radius: 6px;
+        }
+        
         /* Sidebar */
         .sidebar {
             width: 320px;
@@ -32,24 +150,118 @@
             padding: 20px;
             box-shadow: 2px 0 10px rgba(0,0,0,0.1);
             z-index: 1000;
+            padding-top: 80px;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        /* RTL Support */
+        body[dir="rtl"] .sidebar {
+            box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+        }
+        
+        body[dir="rtl"] .top-bar {
+            left: 0;
+            right: 320px;
+        }
+        
+        body[dir="rtl"] .logo-section {
+            flex-direction: row-reverse;
+        }
+        
+        body[dir="rtl"] .user-info {
+            flex-direction: row-reverse;
+        }
+        
+        body[dir="rtl"] .tab-header {
+            flex-direction: row-reverse;
+        }
+        
+        body[dir="rtl"] .detail-label {
+            text-align: right;
+        }
+        
+        body[dir="rtl"] .modal-header {
+            flex-direction: row-reverse;
+        }
+        
+        body[dir="rtl"] .modal-buttons {
+            flex-direction: row-reverse;
+        }
+        
+        body[dir="rtl"] .list-item {
+            text-align: right;
+        }
+        
+        body[dir="rtl"] .list-item-actions {
+            direction: rtl;
+        }
+        
+        body[dir="rtl"] select {
+            text-align: right;
+        }
+        
+        /* Custom scrollbar for sidebar */
+        .sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .sidebar::-webkit-scrollbar-track {
+            background: #1a1a2e;
+        }
+        
+        .sidebar::-webkit-scrollbar-thumb {
+            background: #e94560;
+            border-radius: 3px;
+        }
+        
+        .sidebar::-webkit-scrollbar-thumb:hover {
+            background: #d63850;
+        }
+        
+        /* Tab content scrollbar */
+        .tab-content::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .tab-content::-webkit-scrollbar-track {
+            background: #16213e;
+        }
+        
+        .tab-content::-webkit-scrollbar-thumb {
+            background: #e94560;
+            border-radius: 3px;
+        }
+        
+        .tab-content::-webkit-scrollbar-thumb:hover {
+            background: #d63850;
+        }
+        
+        /* Adjust main content for top bar */
+        #map {
+            margin-top: 60px;
+            height: calc(100vh - 60px) !important;
         }
         
         .sidebar-header {
             margin-bottom: 20px;
             padding-bottom: 15px;
             border-bottom: 1px solid #333;
+            flex-shrink: 0;
         }
         
         .sidebar-header h1 {
             font-size: 20px;
             font-weight: 600;
             color: #e94560;
+            margin: 0;
         }
         
         .sidebar-header p {
             font-size: 12px;
             color: #888;
             margin-top: 5px;
+            margin-bottom: 0;
         }
         
         /* Sidebar tabs */
@@ -59,6 +271,24 @@
             margin-bottom: 20px;
             border-bottom: 1px solid #333;
             padding-bottom: 10px;
+            flex-shrink: 0;
+            overflow-x: auto;
+            overflow-y: hidden;
+            scrollbar-width: thin;
+            scrollbar-color: #666 #1a1a2e;
+        }
+        
+        .sidebar-tabs::-webkit-scrollbar {
+            height: 6px;
+        }
+        
+        .sidebar-tabs::-webkit-scrollbar-track {
+            background: #1a1a2e;
+        }
+        
+        .sidebar-tabs::-webkit-scrollbar-thumb {
+            background: #666;
+            border-radius: 3px;
         }
         
         .sidebar-tab {
@@ -89,6 +319,8 @@
             display: none;
             flex: 1;
             overflow-y: auto;
+            overflow-x: hidden;
+            min-height: 0;
         }
         
         .tab-content.active {
@@ -98,6 +330,7 @@
         
         .tab-header {
             display: flex;
+            flex-wrap: wrap;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 15px;
@@ -304,6 +537,16 @@
             gap: 10px;
         }
         
+        .manual-route-controls {
+            position: absolute;
+            top: 20px;
+            right: 200px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
         .control-btn {
             background: #fff;
             border: none;
@@ -502,11 +745,23 @@
             box-shadow: 0 4px 20px rgba(0,0,0,0.3);
             z-index: 3000;
             display: none;
-            min-width: 350px;
+            min-width: 320px;
+            max-width: 95vw;
+            max-height: 90vh;
+            overflow-y: auto;
+            width: 450px;
         }
         
         .incident-detail-panel.active {
             display: block;
+        }
+        
+        @media (max-width: 500px) {
+            .incident-detail-panel {
+                width: 95vw;
+                padding: 15px;
+                max-height: 85vh;
+            }
         }
         
         .incident-detail-panel h3 {
@@ -567,6 +822,264 @@
         .modal-overlay.active {
             display: block;
         }
+        
+        /* Modal (for branch/user creation) */
+        .modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #1a1a2e;
+            padding: 25px;
+            border-radius: 12px;
+            z-index: 10000;
+            width: 90%;
+            max-width: 400px;
+            display: none;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+        }
+        
+        .modal.active {
+            display: block !important;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #333;
+        }
+        
+        .modal-header h3 {
+            margin: 0;
+            color: #fff;
+            font-size: 18px;
+        }
+        
+        .modal-header .close-btn {
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-header .close-btn:hover {
+            color: #e94560;
+        }
+        
+        /* Form Styles */
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 12px;
+            color: #ccc;
+        }
+        
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #333;
+            border-radius: 4px;
+            background: #16213e;
+            color: #fff;
+            font-size: 13px;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #e94560;
+        }
+        
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .form-actions button {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        
+        .form-actions .btn-primary {
+            background: #e94560;
+            color: #fff;
+        }
+        
+        .form-actions .btn-secondary {
+            background: #333;
+            color: #fff;
+        }
+        
+        .map-picker-btn {
+            background: #3498db;
+            color: #fff;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-top: 8px;
+            width: 100%;
+        }
+        
+        .map-picker-btn:hover {
+            background: #2980b9;
+        }
+        
+        .map-picker-btn.active {
+            background: #e94560;
+        }
+        
+        /* Manage Section Styles */
+        .manage-section {
+            margin-bottom: 25px;
+            background: #16213e;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        
+        .manage-section .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #333;
+        }
+        
+        .manage-section h3 {
+            font-size: 13px;
+            color: #e94560;
+            margin: 0;
+        }
+        
+        .manage-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .manage-item {
+            padding: 10px;
+            background: #1a1a2e;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            font-size: 12px;
+        }
+        
+        .manage-item .name {
+            font-weight: 600;
+            color: #fff;
+        }
+        
+        .manage-item .meta {
+            color: #888;
+            font-size: 11px;
+            margin-top: 4px;
+        }
+        
+        .manage-item .actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        
+        .manage-item .actions button {
+            padding: 4px 8px;
+            font-size: 11px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        
+        .manage-item .actions .btn-edit {
+            background: #3498db;
+            color: white;
+        }
+        
+        .manage-item .actions .btn-delete {
+            background: #e74c3c;
+            color: white;
+        }
+        
+        .manage-item .actions button:hover {
+            opacity: 0.8;
+        }
+        
+        /* Form Styles */
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 12px;
+            color: #ccc;
+        }
+        
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #333;
+            border-radius: 4px;
+            background: #16213e;
+            color: #fff;
+            font-size: 13px;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #e94560;
+        }
+        
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .form-actions button {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        
+        .form-actions .btn-primary {
+            background: #e94560;
+            color: #fff;
+        }
+        
+        .form-actions .btn-secondary {
+            background: #333;
+            color: #fff;
+        }
     </style>
 </head>
 <body>
@@ -578,17 +1091,29 @@
         </div>
         
         <div class="sidebar-tabs">
-            <button class="sidebar-tab active" onclick="switchTab('incidents')">Incidents</button>
-            <button class="sidebar-tab" onclick="switchTab('teams')">Teams</button>
-            <button class="sidebar-tab" onclick="switchTab('points')">Points</button>
-            <button class="sidebar-tab" onclick="switchTab('reports')">Reports</button>
+            <button class="sidebar-tab active" onclick="switchTab('incidents')" data-i18n="incidents">Incidents</button>
+            <button class="sidebar-tab" onclick="switchTab('teams')" data-i18n="teams">Teams</button>
+            <button class="sidebar-tab" onclick="switchTab('points')" data-i18n="points">Points</button>
+            <button class="sidebar-tab" onclick="switchTab('road-blocks')">🚧 Road Blocks</button>
+            <button class="sidebar-tab" onclick="switchTab('reports')" data-i18n="reports">Reports</button>
+            <button class="sidebar-tab" onclick="switchTab('field-reports')">📊 Field Reports</button>
+            <button class="sidebar-tab admin-only" onclick="switchTab('manage')" id="manage-tab-btn" style="display:none" data-i18n="manage">Manage</button>
         </div>
         
         <!-- Incidents Tab -->
         <div class="tab-content active" id="tab-incidents">
             <div class="tab-header">
-                <h2>Incidents</h2>
-                <button class="btn-create" onclick="openIncidentModalFromButton()">+ New</button>
+                <h2 data-i18n="incidents">Incidents</h2>
+                <button class="btn-create" onclick="openIncidentModalFromButton()" data-i18n="new">+ New</button>
+                <br>
+                <label style="font-size: 11px; color: #666; margin-top: 5px; display: inline-block;">
+                    <input type="checkbox" id="show-resolved" onchange="loadData()" style="margin-right: 4px;">
+                    <span data-i18n="show_resolved">Show Resolved</span>
+                </label>
+                <label class="admin-only" id="archived-toggle-container" style="display: none; font-size: 11px; color: #666; margin-left: 15px;">
+                    <input type="checkbox" id="show-archived" onchange="loadData()" style="margin-right: 4px;">
+                    <span data-i18n="show_archived">Show Archived</span>
+                </label>
             </div>
             <div id="incidents-list">
                 <!-- Incidents will be loaded here -->
@@ -617,6 +1142,17 @@
             </div>
         </div>
         
+        <!-- Road Blocks Tab -->
+        <div class="tab-content" id="tab-road-blocks">
+            <div class="tab-header">
+                <h2>🚧 Road Blocks</h2>
+                <button class="btn-create" onclick="toggleRoadBlockMode()">+ Add Block</button>
+            </div>
+            <div id="road-blocks-list">
+                <!-- Road blocks will be loaded here -->
+            </div>
+        </div>
+        
         <!-- Reports Tab -->
         <div class="tab-content" id="tab-reports">
             <div class="tab-header">
@@ -626,6 +1162,88 @@
                 <!-- Reports will be loaded here -->
             </div>
         </div>
+        
+        <!-- Field Reports Tab -->
+        <div class="tab-content" id="tab-field-reports">
+            <div class="tab-header">
+                <h2>📊 Field Reports</h2>
+            </div>
+            <div id="field-reports-panel">
+                <div style="padding: 10px;">
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <select id="report-filter-type" onchange="filterReports()" style="flex: 1; padding: 5px;">
+                            <option value="">All Types</option>
+                            <option value="hazard">Hazard</option>
+                            <option value="request">Request</option>
+                            <option value="status">Status</option>
+                            <option value="update">Update</option>
+                        </select>
+                        <select id="report-filter-priority" onchange="filterReports()" style="flex: 1; padding: 5px;">
+                            <option value="">All Priorities</option>
+                            <option value="5">5 - Critical</option>
+                            <option value="4">4</option>
+                            <option value="3">3 - Normal</option>
+                            <option value="2">2</option>
+                            <option value="1">1 - Low</option>
+                        </select>
+                    </div>
+                    <div id="field-reports-list" style="max-height: 500px; overflow-y: auto;">
+                        <!-- Reports will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Manage Tab (Admin Only) -->
+        <div class="tab-content" id="tab-manage">
+            <div class="tab-header">
+                <h2>System Management</h2>
+            </div>
+            
+            <!-- Branches Section -->
+            <div class="manage-section">
+                <div class="section-header">
+                    <h3 data-i18n="branches">Branches</h3>
+                    <button class="btn-create" onclick="openBranchModal()" data-i18n="new_branch">+ New Branch</button>
+                </div>
+                <div id="branches-list" class="manage-list">
+                    <!-- Branches will be loaded here -->
+                </div>
+            </div>
+            
+            <!-- Users Section -->
+            <div class="manage-section">
+                <div class="section-header">
+                    <h3 data-i18n="users">Users</h3>
+                    <button class="btn-create" onclick="openUserModal()" data-i18n="new_user">+ New User</button>
+                </div>
+                <div id="users-list" class="manage-list">
+                    <!-- Users will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Top Navigation Bar -->
+    <div class="top-bar" id="top-bar">
+        <div class="logo-section">
+            <img src="/static/img/hala.png" alt="Logo" class="logo-img">
+            <span class="org-name" data-i18n="org_name">Libyan Red Crescent</span>
+        </div>
+        
+        <div class="user-info">
+            <div class="user-details">
+                <span class="username" id="user-name">Loading...</span>
+                <span class="role-badge" id="user-role">...</span>
+            </div>
+        </div>
+        
+        <div class="branch-selector" id="branch-selector-container">
+            <!-- Branch selector will be shown/hidden based on role -->
+        </div>
+        
+        <button class="logout-btn" onclick="toggleLang()" style="margin-right: 10px;">🌐</button>
+        <button class="logout-btn" onclick="logout()" data-i18n="logout">Logout</button>
     </div>
     
     <!-- Map Container -->
@@ -635,6 +1253,16 @@
         <div class="map-controls">
             <button class="control-btn primary" onclick="refreshData()">Refresh</button>
             <button class="control-btn" onclick="clearRoutes()">Clear Routes</button>
+            <button class="control-btn" onclick="toggleRoadBlockMode()" id="road-block-btn">🚧 Add Road Block</button>
+            <button class="control-btn" onclick="togglePlanningMode()" id="planning-mode-btn">🧠 Planning Mode</button>
+            <button class="control-btn" onclick="toggleManualRouteMode()" id="manual-route-btn">✏️ Manual Route</button>
+        </div>
+        
+        <div class="manual-route-controls" id="manual-route-controls" style="display: none;">
+            <button class="control-btn" onclick="undoLastWaypoint()">↩️ Undo</button>
+            <button class="control-btn" onclick="clearManualRoute()">🗑️ Clear</button>
+            <button class="control-btn" onclick="saveManualRoute()">💾 Save</button>
+            <button class="control-btn primary" onclick="generateManualRoute()">🚀 Generate</button>
         </div>
         
         <div class="status-indicator" id="status-indicator">
@@ -652,42 +1280,42 @@
     
     <!-- Incident Creation Modal -->
     <div class="incident-modal" id="incident-modal">
-        <h3>Create Incident</h3>
-        <label for="incident-type">Type</label>
+        <h3 data-i18n="create_incident">Create Incident</h3>
+        <label for="incident-type" data-i18n="type">Type</label>
         <select id="incident-type">
-            <option value="Fire">Fire</option>
-            <option value="Medical">Medical Emergency</option>
-            <option value="Flood">Flood</option>
-            <option value="Traffic">Traffic Accident</option>
-            <option value="Structural">Structural Collapse</option>
-            <option value="Other">Other</option>
+            <option value="Fire" data-i18n="fire">Fire</option>
+            <option value="Medical" data-i18n="medical">Medical Emergency</option>
+            <option value="Flood" data-i18n="flood">Flood</option>
+            <option value="Traffic" data-i18n="traffic">Traffic Accident</option>
+            <option value="Structural" data-i18n="structural">Structural Collapse</option>
+            <option value="Other" data-i18n="other">Other</option>
         </select>
         
-        <label for="incident-severity">Severity (1-5)</label>
+        <label for="incident-severity" data-i18n="severity">Severity (1-5)</label>
         <select id="incident-severity">
-            <option value="1">1 - Low</option>
-            <option value="2">2 - Moderate</option>
-            <option value="3">3 - High</option>
-            <option value="4">4 - Severe</option>
-            <option value="5">5 - Critical</option>
+            <option value="1" data-i18n="low">1 - Low</option>
+            <option value="2" data-i18n="moderate">2 - Moderate</option>
+            <option value="3" data-i18n="high">3 - High</option>
+            <option value="4" data-i18n="severe">4 - Severe</option>
+            <option value="5" data-i18n="critical">5 - Critical</option>
         </select>
         
         <input type="hidden" id="incident-lat">
         <input type="hidden" id="incident-lng">
         
         <div class="modal-buttons">
-            <button class="btn-secondary" onclick="closeIncidentModal()">Cancel</button>
-            <button class="btn-primary" onclick="createIncident()">Create</button>
+            <button class="btn-secondary" onclick="closeIncidentModal()" data-i18n="cancel">Cancel</button>
+            <button class="btn-primary" onclick="createIncident()" data-i18n="create">Create</button>
         </div>
     </div>
     
     <!-- Incident Detail Panel -->
     <div class="incident-detail-panel" id="incident-detail-panel">
-        <h3>Incident Details</h3>
+            <h3 data-i18n="incident_details">Incident Details</h3>
         <input type="hidden" id="edit-incident-id">
         
         <div class="detail-row">
-            <span class="detail-label">Type:</span>
+            <span class="detail-label" data-i18n="type">Type:</span>
             <select id="edit-incident-type" style="padding: 4px; border-radius: 3px; border: 1px solid #ddd;">
                 <option value="Fire">Fire</option>
                 <option value="Medical">Medical Emergency</option>
@@ -698,79 +1326,108 @@
             </select>
         </div>
         <div class="detail-row">
-            <span class="detail-label">Severity:</span>
+            <span class="detail-label" data-i18n="severity">Severity:</span>
             <select id="edit-incident-severity" style="padding: 4px; border-radius: 3px; border: 1px solid #ddd;">
-                <option value="1">1 - Low</option>
-                <option value="2">2 - Moderate</option>
-                <option value="3">3 - High</option>
-                <option value="4">4 - Severe</option>
-                <option value="5">5 - Critical</option>
+                <option value="1" data-i18n="low">1 - Low</option>
+                <option value="2" data-i18n="moderate">2 - Moderate</option>
+                <option value="3" data-i18n="high">3 - High</option>
+                <option value="4" data-i18n="severe">4 - Severe</option>
+                <option value="5" data-i18n="critical">5 - Critical</option>
             </select>
         </div>
         <div class="detail-row">
-            <span class="detail-label">Status:</span>
+            <span class="detail-label" data-i18n="status">Status:</span>
             <span class="detail-value" id="detail-status"></span>
         </div>
         <div class="detail-row">
-            <span class="detail-label">Location:</span>
+            <span class="detail-label" data-i18n="location">Location:</span>
             <span class="detail-value" id="detail-location"></span>
         </div>
         <div class="detail-row">
-            <span class="detail-label">Assign Team:</span>
+            <span class="detail-label" data-i18n="assigned_teams">Assigned Teams:</span>
+            <div id="assigned-teams-list" style="margin-top: 5px;"></div>
+        </div>
+        <div class="detail-row" id="report-section" style="display: none;">
+            <span class="detail-label" data-i18n="report">Report:</span>
+            <div id="report-display" style="margin-top: 5px; padding: 10px; background: #f9f9f9; border-radius: 5px; font-size: 13px;">
+                <div><strong data-i18n="summary">Summary:</strong> <span id="report-summary-display"></span></div>
+                <div style="margin-top: 5px;"><strong data-i18n="actions">Actions:</strong> <span id="report-actions-display"></span></div>
+                <div style="margin-top: 5px;"><strong data-i18n="casualties">Casualties:</strong> <span id="report-casualties-display"></span></div>
+                <div style="margin-top: 5px;"><strong data-i18n="resources_used">Resources:</strong> <span id="report-resources-display"></span></div>
+                <div style="margin-top: 5px;"><strong data-i18n="notes">Notes:</strong> <span id="report-notes-display"></span></div>
+            </div>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label" data-i18n="assign_team">Assign Team:</span>
             <select id="assign-team-select" style="padding: 4px; border-radius: 3px; border: 1px solid #ddd; width: 100%;">
-                <option value="">-- Select Team --</option>
+                <option value="" data-i18n="select_team">-- Select Team --</option>
             </select>
         </div>
-        <button class="btn-assign" onclick="updateIncident()" style="background: #3498db;">Update Incident</button>
-        <button class="btn-assign" onclick="assignSelectedTeam()">Assign Selected Team</button>
-        <button class="btn-assign" onclick="createRouteForIncident()" style="background: #f39c12;">Create Route (Requires Engine)</button>
-        <button class="btn-assign" onclick="markResolved()" style="background: #27ae60; margin-top: 10px;">Mark Resolved</button>
-        <button class="btn-assign" onclick="deleteIncident()" style="background: #e74c3c; margin-top: 10px;">Delete</button>
-        <button class="btn-close" onclick="closeDetailPanel()">Close</button>
+        <button class="btn-assign" onclick="updateIncident()" style="background: #3498db;" data-i18n="update_incident">Update Incident</button>
+        <button class="btn-assign" onclick="assignSelectedTeam()" data-i18n="assign_selected_team">Assign Selected Team</button>
+        <button class="btn-assign" onclick="createRouteForIncident()" style="background: #f39c12;" data-i18n="create_route">Create Route (Auto)</button>
+        <button class="btn-assign" onclick="enableManualRouteForIncident()" style="background: #9b59b6;" data-i18n="manual_route">✏️ Manual Route</button>
+        <button class="btn-assign" onclick="markResolved()" style="background: #27ae60; margin-top: 10px;" data-i18n="mark_resolved">Mark Resolved</button>
+        <button class="btn-assign" id="report-btn" onclick="showReportModal()" style="background: #e67e22; margin-top: 10px; display: none;" data-i18n="submit_report">Submit Report</button>
+        <button class="btn-assign" onclick="showTimeline()" style="background: #9b59b6; margin-top: 10px;" data-i18n="view_timeline">View Timeline</button>
+        <button class="btn-assign" id="archive-btn" onclick="archiveIncident()" style="background: #7f8c8d; margin-top: 10px; display: none;" data-i18n="archive">Archive</button>
+        <button class="btn-close" onclick="closeDetailPanel()" data-i18n="close">Close</button>
     </div>
     
     <!-- Team Creation Modal -->
     <div class="incident-modal" id="team-modal">
-        <h3>Create Team</h3>
-        <label for="team-number">Team Number</label>
+        <h3 data-i18n="create_team">Create Team</h3>
+        <label for="team-number" data-i18n="team_number">Team Number</label>
         <input type="number" id="team-number" placeholder="e.g. 101">
         
-        <label for="team-name">Name</label>
+        <label for="team-name" data-i18n="team_name">Name</label>
         <input type="text" id="team-name" placeholder="Team name">
         
-        <p style="font-size: 11px; color: #888; margin-bottom: 15px;">Click on the map to set team location</p>
+        <label for="team-branch" data-i18n="branch">Branch</label>
+        <select id="team-branch">
+            <!-- Branches will be loaded here -->
+        </select>
+        
+        <p style="font-size: 11px; color: #888; margin-bottom: 15px;" data-i18n="click_map">Click on the map to set team location</p>
         
         <input type="hidden" id="team-lat">
         <input type="hidden" id="team-lng">
         
         <div class="modal-buttons">
-            <button class="btn-secondary" onclick="closeTeamModal()">Cancel</button>
-            <button class="btn-primary" onclick="createTeam()">Create</button>
+            <button class="btn-secondary" onclick="closeTeamModal()" data-i18n="cancel">Cancel</button>
+            <button class="btn-primary" onclick="createTeam()" data-i18n="create">Create</button>
         </div>
     </div>
     
     <!-- Team Edit Modal -->
     <div class="incident-modal" id="team-edit-modal">
-        <h3>Edit Team</h3>
+        <h3 data-i18n="edit_team">Edit Team</h3>
         <input type="hidden" id="edit-team-id">
         
-        <label for="edit-team-number">Team Number</label>
+        <label for="edit-team-number" data-i18n="team_number">Team Number</label>
         <input type="number" id="edit-team-number" placeholder="e.g. 101">
         
-        <label for="edit-team-name">Name</label>
+        <label for="edit-team-name" data-i18n="team_name">Name</label>
         <input type="text" id="edit-team-name" placeholder="Team name">
         
-        <label for="edit-team-status">Status</label>
-        <select id="edit-team-status">
-            <option value="available">Available</option>
-            <option value="busy">Busy</option>
-            <option value="offline">Offline</option>
+        <label for="edit-team-branch" data-i18n="branch">Branch</label>
+        <select id="edit-team-branch">
+            <!-- Branches will be loaded here -->
         </select>
         
-        <label for="edit-team-color">Color</label>
+        <label for="edit-team-status" data-i18n="team_status">Status</label>
+        <select id="edit-team-status">
+            <option value="available" data-i18n="available">Available</option>
+            <option value="en_route" data-i18n="en_route">En Route</option>
+            <option value="on_scene" data-i18n="on_scene">On Scene</option>
+            <option value="busy" data-i18n="busy">Busy</option>
+            <option value="offline" data-i18n="offline">Offline</option>
+        </select>
+        
+        <label for="edit-team-color" data-i18n="team_color">Color</label>
         <input type="color" id="edit-team-color" value="#3498db">
         
-        <label for="edit-team-icon">Icon</label>
+        <label for="edit-team-icon" data-i18n="team_icon">Icon</label>
         <select id="edit-team-icon">
             <option value="🚑">🚑 Ambulance</option>
             <option value="🚒">🚒 Fire Truck</option>
@@ -780,31 +1437,107 @@
             <option value="🚙">🚙 Car</option>
         </select>
         
-        <label for="edit-team-gps">GPS Tracking</label>
+        <label for="edit-team-gps" data-i18n="gps_tracking">GPS Tracking</label>
         <select id="edit-team-gps">
             <option value="0">Disabled (Manual)</option>
             <option value="1">Enabled (GPS)</option>
         </select>
         
         <div class="modal-buttons">
-            <button class="btn-secondary" onclick="closeTeamEditModal()">Cancel</button>
-            <button class="btn-primary" onclick="updateTeam()">Save</button>
+            <button class="btn-secondary" onclick="closeTeamEditModal()" data-i18n="cancel">Cancel</button>
+            <button class="btn-primary" onclick="updateTeam()" data-i18n="save">Save</button>
+        </div>
+    </div>
+    
+    <!-- Team Report Modal -->
+    <div class="incident-modal" id="team-report-modal">
+        <h3>📡 Send Team Report</h3>
+        <input type="hidden" id="report-team-id">
+        <input type="hidden" id="report-incident-id">
+        
+        <label for="report-type">Type</label>
+        <select id="report-type">
+            <option value="status">Status</option>
+            <option value="hazard">Hazard</option>
+            <option value="update">Update</option>
+            <option value="request">Request</option>
+        </select>
+        
+        <label for="report-priority">Priority (1-5)</label>
+        <select id="report-priority">
+            <option value="1">1 - Low</option>
+            <option value="2">2</option>
+            <option value="3" selected>3 - Normal</option>
+            <option value="4">4</option>
+            <option value="5">5 - Critical</option>
+        </select>
+        
+        <label for="report-message">Message</label>
+        <textarea id="report-message" rows="4" placeholder="Describe the situation..."></textarea>
+        
+        <p style="font-size: 11px; color: #888; margin-bottom: 15px;">Location will use team GPS if available</p>
+        
+        <input type="hidden" id="report-lat">
+        <input type="hidden" id="report-lng">
+        
+        <div class="modal-buttons">
+            <button class="btn-secondary" onclick="closeTeamReportModal()">Cancel</button>
+            <button class="btn-primary" onclick="submitTeamReport()">Send Report</button>
+        </div>
+    </div>
+    
+    <!-- Road Block Creation Modal -->
+    <div class="incident-modal" id="road-block-modal">
+        <h3>🚧 Add Road Block</h3>
+        <label for="road-block-status">Status</label>
+        <select id="road-block-status">
+            <option value="closed">Closed</option>
+            <option value="restricted">Restricted</option>
+            <option value="open">Open</option>
+        </select>
+        
+        <label for="road-block-reason">Reason</label>
+        <input type="text" id="road-block-reason" placeholder="e.g., Accident, Construction, Security">
+        
+        <label for="road-block-radius">Radius (meters)</label>
+        <input type="number" id="road-block-radius" value="200" min="50" max="5000">
+        
+        <label for="road-block-severity">Severity (1-5)</label>
+        <select id="road-block-severity">
+            <option value="1">1 - Low</option>
+            <option value="2">2 - Moderate</option>
+            <option value="3" selected>3 - High</option>
+            <option value="4">4 - Severe</option>
+            <option value="5">5 - Critical</option>
+        </select>
+        
+        <label for="road-block-expires">Expires At (optional)</label>
+        <input type="datetime-local" id="road-block-expires">
+        
+        <p style="font-size: 11px; color: #888; margin-bottom: 15px;">Click on the map to set road block location</p>
+        
+        <input type="hidden" id="road-block-lat">
+        <input type="hidden" id="road-block-lng">
+        
+        <div class="modal-buttons">
+            <button class="btn-secondary" onclick="closeRoadBlockModal()">Cancel</button>
+            <button class="btn-primary" onclick="createRoadBlock()">Create</button>
         </div>
     </div>
     
     <!-- Point Creation Modal -->
     <div class="incident-modal" id="point-modal">
-        <h3>Create Point</h3>
-        <label for="point-name">Name</label>
+        <h3 data-i18n="create_point">Create Point</h3>
+        <label for="point-name" data-i18n="name">Name</label>
         <input type="text" id="point-name" placeholder="Point name">
         
-        <label for="point-type">Type</label>
+        <label for="point-type" data-i18n="type">Type</label>
         <select id="point-type" onchange="toggleCustomType()">
-            <option value="hospital">Hospital</option>
+            <option value="hospital" data-i18n="hospital">Hospital</option>
             <option value="shelter">Shelter</option>
             <option value="warehouse">Warehouse</option>
-            <option value="police_station">Police Station</option>
-            <option value="fire_station">Fire Station</option>
+            <option value="police_station" data-i18n="police">Police Station</option>
+            <option value="fire_station" data-i18n="fire_station">Fire Station</option>
             <option value="school">School</option>
             <option value="lrc">LRC (Local Response Center)</option>
             <option value="clinic">Clinic</option>
@@ -812,38 +1545,38 @@
             <option value="government">Government Building</option>
             <option value="mosque">Mosque</option>
             <option value="market">Market</option>
-            <option value="other">Other (Custom)</option>
+            <option value="other" data-i18n="other">Other (Custom)</option>
         </select>
         
         <label for="point-custom-type" id="custom-type-label" style="display: none;">Custom Type</label>
         <input type="text" id="point-custom-type" placeholder="Enter custom type" style="display: none;">
         
-        <p style="font-size: 11px; color: #888; margin-bottom: 15px;">Click on the map to set point location</p>
+        <p style="font-size: 11px; color: #888; margin-bottom: 15px;" data-i18n="click_on_map">Click on the map to set point location</p>
         
         <input type="hidden" id="point-lat">
         <input type="hidden" id="point-lng">
         
         <div class="modal-buttons">
-            <button class="btn-secondary" onclick="closePointModal()">Cancel</button>
-            <button class="btn-primary" onclick="createPoint()">Create</button>
+            <button class="btn-secondary" onclick="closePointModal()" data-i18n="cancel">Cancel</button>
+            <button class="btn-primary" onclick="createPoint()" data-i18n="create">Create</button>
         </div>
     </div>
     
     <!-- Point Edit Modal -->
     <div class="incident-modal" id="point-edit-modal">
-        <h3>Edit Point</h3>
+        <h3 data-i18n="edit_point">Edit Point</h3>
         <input type="hidden" id="edit-point-id">
         
-        <label for="edit-point-name">Name</label>
+        <label for="edit-point-name" data-i18n="name">Name</label>
         <input type="text" id="edit-point-name" placeholder="Point name">
         
-        <label for="edit-point-type">Type</label>
+        <label for="edit-point-type" data-i18n="type">Type</label>
         <select id="edit-point-type" onchange="toggleEditCustomType()">
-            <option value="hospital">Hospital</option>
+            <option value="hospital" data-i18n="hospital">Hospital</option>
             <option value="shelter">Shelter</option>
             <option value="warehouse">Warehouse</option>
-            <option value="police_station">Police Station</option>
-            <option value="fire_station">Fire Station</option>
+            <option value="police_station" data-i18n="police">Police Station</option>
+            <option value="fire_station" data-i18n="fire_station">Fire Station</option>
             <option value="school">School</option>
             <option value="lrc">LRC (Local Response Center)</option>
             <option value="clinic">Clinic</option>
@@ -851,15 +1584,151 @@
             <option value="government">Government Building</option>
             <option value="mosque">Mosque</option>
             <option value="market">Market</option>
-            <option value="other">Other (Custom)</option>
+            <option value="other" data-i18n="other">Other (Custom)</option>
         </select>
         
         <label for="edit-point-custom-type" id="edit-custom-type-label" style="display: none;">Custom Type</label>
         <input type="text" id="edit-point-custom-type" placeholder="Enter custom type" style="display: none;">
         
         <div class="modal-buttons">
-            <button class="btn-secondary" onclick="closePointEditModal()">Cancel</button>
-            <button class="btn-primary" onclick="updatePoint()">Save</button>
+            <button class="btn-secondary" onclick="closePointEditModal()" data-i18n="cancel">Cancel</button>
+            <button class="btn-primary" onclick="updatePoint()" data-i18n="save">Save</button>
+        </div>
+    </div>
+    
+    <!-- Timeline Modal -->
+    <div class="modal" id="timeline-modal">
+        <div class="modal-header">
+            <h3>Incident Timeline</h3>
+            <button class="close-btn" onclick="closeTimelineModal()">&times;</button>
+        </div>
+        <div id="timeline-content" style="padding: 20px; max-height: 400px; overflow-y: auto;">
+            <!-- Timeline entries will be loaded here -->
+        </div>
+        <div class="modal-buttons">
+            <button class="btn-secondary" onclick="closeTimelineModal()" data-i18n="close">Close</button>
+        </div>
+    </div>
+    
+    <!-- Report Modal -->
+    <div class="modal" id="report-modal">
+        <div class="modal-header">
+            <h3>Incident Report</h3>
+            <button class="close-btn" onclick="closeReportModal()">&times;</button>
+        </div>
+        <div class="form-group">
+            <label data-i18n="summary">Summary</label>
+            <textarea id="report-summary" rows="3" placeholder="Brief summary of the incident"></textarea>
+        </div>
+        <div class="form-group">
+            <label data-i18n="actions_taken">Actions Taken</label>
+            <textarea id="report-actions" rows="3" placeholder="Describe actions taken to respond"></textarea>
+        </div>
+        <div class="form-group">
+            <label data-i18n="casualties">Casualties</label>
+            <textarea id="report-casualties" rows="2" placeholder="Any casualties (leave blank if none)"></textarea>
+        </div>
+        <div class="form-group">
+            <label data-i18n="resources_used">Resources Used</label>
+            <textarea id="report-resources" rows="2" placeholder="Equipment, personnel, vehicles used"></textarea>
+        </div>
+        <div class="form-group">
+            <label data-i18n="notes">Notes</label>
+            <textarea id="report-notes" rows="2" placeholder="Additional notes or observations"></textarea>
+        </div>
+        <div class="modal-buttons">
+            <button class="btn-secondary" onclick="closeReportModal()" data-i18n="cancel">Cancel</button>
+            <button class="btn-primary" onclick="submitReport()" data-i18n="submit_report">Submit Report</button>
+        </div>
+    </div>
+    
+    <!-- Branch Creation Modal -->
+    <div class="modal" id="branch-modal">
+        <div class="modal-header">
+            <h3 data-i18n="create_branch">Create New Branch</h3>
+            <button class="close-btn" onclick="closeBranchModal()">&times;</button>
+        </div>
+        
+        <div class="form-group">
+            <label data-i18n="branch_name">Name</label>
+            <input type="text" id="branch-name" placeholder="Branch name">
+        </div>
+        
+        <div class="form-group">
+            <label data-i18n="branch_city">City</label>
+            <input type="text" id="branch-city" placeholder="City">
+        </div>
+        
+        <div class="form-group">
+            <label data-i18n="branch_region">Region</label>
+            <input type="text" id="branch-region" placeholder="Region (e.g., East, West)">
+        </div>
+        
+        <div class="form-group">
+            <label>Coverage Radius (km)</label>
+            <input type="number" id="branch-radius" step="0.1" value="10" placeholder="10">
+            <small style="color:#666;font-size:11px">Area of operation around branch center</small>
+        </div>
+        
+        <div class="form-group">
+            <label data-i18n="branch_location">Location</label>
+            <div id="branch-location-display" style="background:#16213e;padding:8px 12px;border-radius:4px;font-size:12px;color:#888;margin-bottom:8px;">
+                Click "Drop Pin on Map" to set location
+            </div>
+            <input type="hidden" id="branch-lat">
+            <input type="hidden" id="branch-lng">
+            <button type="button" class="map-picker-btn" id="branch-drop-pin-btn" onclick="enableBranchPinDrop()">
+                📍 Drop Pin on Map
+            </button>
+        </div>
+        
+        <div class="form-actions">
+            <button class="btn-secondary" onclick="closeBranchModal()" data-i18n="cancel">Cancel</button>
+            <button class="btn-primary" onclick="createBranch()" data-i18n="create_branch">Create Branch</button>
+        </div>
+    </div>
+    
+    <!-- User Creation Modal -->
+    <div class="modal" id="user-modal">
+        <div class="modal-header">
+            <h3 data-i18n="create_user">Create New User</h3>
+            <button class="close-btn" onclick="closeUserModal()">&times;</button>
+        </div>
+        
+        <div class="form-group">
+            <label data-i18n="username">Username</label>
+            <input type="text" id="user-username" placeholder="Username">
+        </div>
+        
+        <div class="form-group">
+            <label data-i18n="password">Password</label>
+            <input type="password" id="user-password" placeholder="Password">
+        </div>
+        
+        <div class="form-group">
+            <label data-i18n="role">Role</label>
+            <select id="user-role-select">
+                <option value="operator">Operator</option>
+                <option value="regional_admin">Regional Admin</option>
+                <option value="admin">Admin</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label data-i18n="branch">Branch</label>
+            <select id="user-branch-select">
+                <option value="">None (for admin)</option>
+            </select>
+        </div>
+        
+        <div class="form-group" id="user-region-group">
+            <label data-i18n="region">Region</label>
+            <input type="text" id="user-region" placeholder="Region (for regional_admin)">
+        </div>
+        
+        <div class="form-actions">
+            <button class="btn-secondary" onclick="closeUserModal()" data-i18n="cancel">Cancel</button>
+            <button class="btn-primary" onclick="createUser()" data-i18n="create_user">Create User</button>
         </div>
     </div>
     
@@ -877,6 +1746,8 @@
         let teamMarkers = {};
         let routeLines = {};
         let pointMarkers = {};
+        let roadBlockMarkers = {};
+        let roadBlocks = [];
         let selectedIncident = null;
         let selectedTeam = null;
         let selectedPoint = null;
@@ -884,10 +1755,908 @@
         let currentTab = 'incidents';
         let teamCreationMode = false;
         let pointCreationMode = false;
+        let roadBlockCreationMode = false;
+        let planningMode = false;
+        let manualRouteMode = false;
+        let manualWaypoints = [];
+        let manualPolyline = null;
+        let waypointMarkers = [];
+        
+        // Auth variables
+        let currentUser = null;
+        let currentBranch = null;
+        let branches = [];
+        let authToken = localStorage.getItem('token');
+        
+        // Language system
+        let currentLang = localStorage.getItem('lang') || 'ar';
+        
+        const translations = {
+            en: {
+                "org_name": "Libyan Red Crescent",
+                "incidents": "Incidents",
+                "teams": "Teams",
+                "points": "Points",
+                "reports": "Reports",
+                "manage": "Manage",
+                "new": "+ New",
+                "new_branch": "+ New Branch",
+                "new_user": "+ New User",
+                "create_point": "Create Point",
+                "edit_point": "Edit Point",
+                "show_resolved": "Show Resolved",
+                "show_archived": "Show Archived",
+                "incident_details": "Incident Details",
+                "create_incident": "Create Incident",
+                "type": "Type",
+                "severity": "Severity",
+                "status": "Status",
+                "location": "Location",
+                "assigned_teams": "Assigned Teams",
+                "assign_team": "Assign Team",
+                "update_incident": "Update Incident",
+                "assign_selected_team": "Assign Selected Team",
+                "create_route": "Create Route (Requires Engine)",
+                "mark_resolved": "Mark Resolved",
+                "submit_report": "Submit Report",
+                "view_timeline": "View Timeline",
+                "archive": "Archive",
+                "delete": "Delete",
+                "edit": "Edit",
+                "save": "Save",
+                "close": "Close",
+                "summary": "Summary",
+                "actions_taken": "Actions Taken",
+                "casualties": "Casualties",
+                "resources_used": "Resources Used",
+                "notes": "Notes",
+                "cancel": "Cancel",
+                "create": "Create",
+                "login": "Login",
+                "logout": "Logout",
+                "username": "Username",
+                "password": "Password",
+                "no_teams_assigned": "No teams assigned",
+                "select_team": "-- Select Team --",
+                "total_incidents": "Total Incidents",
+                "active": "Active",
+                "assigned": "Assigned",
+                "resolved": "Resolved",
+                "busy": "Busy",
+                "total_teams": "Total Teams",
+                "available": "Available",
+                "points": "Points",
+                "branches": "Branches",
+                "users": "Users",
+                "role": "Role",
+                "branch": "Branch",
+                "region": "Region",
+                "name": "Name",
+                "point_name": "Point name",
+                "click_on_map": "Click on the map to set point location",
+                "fire": "Fire",
+                "medical": "Medical Emergency",
+                "flood": "Flood",
+                "traffic": "Traffic Accident",
+                "structural": "Structural Collapse",
+                "other": "Other",
+                "hospital": "Hospital",
+                "fire_station": "Fire Station",
+                "police": "Police",
+                "low": "Low",
+                "moderate": "Moderate",
+                "high": "High",
+                "severe": "Severe",
+                "critical": "Critical",
+                "lat": "Lat",
+                "lng": "Lng",
+                "create_team": "Create Team",
+                "create_user": "Create New User",
+                "create_branch": "Create New Branch",
+                "edit_team": "Edit Team",
+                "edit_user": "Edit User",
+                "edit_branch": "Edit Branch",
+                "team_number": "Team Number",
+                "team_name": "Team Name",
+                "team_status": "Team Status",
+                "team_color": "Team Color",
+                "team_icon": "Team Icon",
+                "gps_tracking": "GPS Tracking",
+                "enabled": "Enabled",
+                "disabled": "Disabled",
+                "branch_name": "Branch Name",
+                "branch_city": "City",
+                "branch_region": "Region",
+                "branch_location": "Branch Location",
+                "click_map": "Click on map to set location",
+                "new_incident": "New incident in your area",
+                "team_enter": "Team entered your area",
+                "route": "Route",
+                "eta": "ETA",
+                "distance": "Distance",
+                "source": "Source",
+                "report": "Report",
+                "actions": "Actions",
+                "online": "Online",
+                "offline": "Offline",
+                "clear_routes": "Clear all routes?",
+                "error_clearing_routes": "Error clearing routes:",
+                "branch_updated": "Branch updated successfully!",
+                "branch_created": "Branch created successfully!",
+                "user_updated": "User updated successfully!",
+                "user_created": "User created successfully!",
+                "branch_deleted": "Branch deleted successfully!",
+                "user_deleted": "User deleted successfully!",
+                "delete_branch_confirm": "Are you sure you want to delete this branch?",
+                "delete_user_confirm": "Are you sure you want to delete this user?",
+                "delete_team_confirm": "Are you sure you want to delete this team?",
+                "delete_point_confirm": "Are you sure you want to delete this point?",
+                "delete_incident_confirm": "Are you sure you want to delete this incident?",
+                "failed_delete_branch": "Failed to delete branch",
+                "failed_delete_user": "Failed to delete user",
+                "failed_delete_team": "Failed to delete team",
+                "failed_delete_point": "Failed to delete point",
+                "team_deleted": "Team deleted successfully!",
+                "point_deleted": "Point deleted successfully!",
+                "no_branches_found": "No branches found",
+                "no_users_found": "No users found",
+                "no_teams_found": "No teams found",
+                "no_points_found": "No points found",
+                "no_incidents_found": "No incidents found",
+                "system_management": "System Management"
+            },
+            ar: {
+                "org_name": "الهلال الاحمر الليبي",
+                "incidents": "الحوادث",
+                "teams": "الفرق",
+                "points": "النقاط",
+                "reports": "التقارير",
+                "manage": "إدارة",
+                "new": "+ جديد",
+                "new_branch": "+ فرع جديد",
+                "new_user": "+ مستخدم جديد",
+                "create_point": "إنشاء نقطة",
+                "edit_point": "تعديل نقطة",
+                "show_resolved": "إظهار المحلولة",
+                "show_archived": "إظهار المؤرشفة",
+                "incident_details": "تفاصيل الحادث",
+                "create_incident": "إنشاء حادث",
+                "type": "النوع",
+                "severity": "الشدة",
+                "status": "الحالة",
+                "location": "الموقع",
+                "assigned_teams": "الفرق المعينة",
+                "assign_team": "تعيين فريق",
+                "update_incident": "تحديث الحادث",
+                "assign_selected_team": "تعيين الفريق المحدد",
+                "create_route": "إنشاء مسار (يتطلب المحرك)",
+                "mark_resolved": "تحديد كمحلول",
+                "submit_report": "تقديم تقرير",
+                "view_timeline": "عرض الجدول الزمني",
+                "archive": "أرشفة",
+                "delete": "حذف",
+                "edit": "تعديل",
+                "save": "حفظ",
+                "close": "إغلاق",
+                "summary": "ملخص",
+                "actions_taken": "الإجراءات المتخذة",
+                "casualties": "الإصابات",
+                "resources_used": "الموارد المستخدمة",
+                "notes": "ملاحظات",
+                "cancel": "إلغاء",
+                "create": "إنشاء",
+                "login": "تسجيل الدخول",
+                "logout": "تسجيل الخروج",
+                "username": "اسم المستخدم",
+                "password": "كلمة المرور",
+                "no_teams_assigned": "لا توجد فرق معينة",
+                "select_team": "-- اختر فريق --",
+                "total_incidents": "إجمالي الحوادث",
+                "active": "نشط",
+                "assigned": "معين",
+                "resolved": "محلول",
+                "busy": "مشغول",
+                "total_teams": "إجمالي الفرق",
+                "available": "متاح",
+                "points": "النقاط",
+                "branches": "الفروع",
+                "users": "المستخدمين",
+                "role": "الدور",
+                "branch": "الفرع",
+                "region": "المنطقة",
+                "name": "الاسم",
+                "point_name": "اسم النقطة",
+                "click_on_map": "انقر على الخريطة لتحديد موقع النقطة",
+                "fire": "حريق",
+                "medical": "طوارئ طبية",
+                "flood": "فيضان",
+                "traffic": "حادث مروري",
+                "structural": "انهيار هيكلي",
+                "other": "أخرى",
+                "hospital": "مستشفى",
+                "fire_station": "محطة إطفاء",
+                "police": "شرطة",
+                "low": "منخفض",
+                "moderate": "متوسط",
+                "high": "عالي",
+                "severe": "شديد",
+                "critical": "حرج",
+                "lat": "خط العرض",
+                "lng": "خط الطول",
+                "create_team": "إنشاء فريق",
+                "create_user": "إنشاء مستخدم جديد",
+                "create_branch": "إنشاء فرع جديد",
+                "edit_team": "تعديل فريق",
+                "edit_user": "تعديل مستخدم",
+                "edit_branch": "تعديل فرع",
+                "team_number": "رقم الفريق",
+                "team_name": "اسم الفريق",
+                "team_status": "حالة الفريق",
+                "team_color": "لون الفريق",
+                "team_icon": "أيقونة الفريق",
+                "gps_tracking": "تتبع GPS",
+                "enabled": "مفعّل",
+                "disabled": "معطّل",
+                "branch_name": "اسم الفرع",
+                "branch_city": "المدينة",
+                "branch_region": "المنطقة",
+                "branch_location": "موقع الفرع",
+                "click_map": "انقر على الخريطة لتحديد الموقع",
+                "new_incident": "حادث جديد في منطقتك",
+                "team_enter": "دخل فريق إلى منطقتك",
+                "route": "مسار",
+                "eta": "الوقت المقدر",
+                "distance": "المسافة",
+                "source": "المصدر",
+                "report": "تقرير",
+                "actions": "الإجراءات",
+                "online": "متصل",
+                "offline": "غير متصل",
+                "clear_routes": "مسح جميع المسارات؟",
+                "error_clearing_routes": "خطأ في مسح المسارات:",
+                "branch_updated": "تم تحديث الفرع بنجاح!",
+                "branch_created": "تم إنشاء الفرع بنجاح!",
+                "user_updated": "تم تحديث المستخدم بنجاح!",
+                "user_created": "تم إنشاء المستخدم بنجاح!",
+                "branch_deleted": "تم حذف الفرع بنجاح!",
+                "user_deleted": "تم حذف المستخدم بنجاح!",
+                "delete_branch_confirm": "هل أنت متأكد من حذف هذا الفرع؟",
+                "delete_user_confirm": "هل أنت متأكد من حذف هذا المستخدم؟",
+                "delete_team_confirm": "هل أنت متأكد من حذف هذا الفريق؟",
+                "delete_point_confirm": "هل أنت متأكد من حذف هذه النقطة؟",
+                "delete_incident_confirm": "هل أنت متأكد من حذف هذا الحادث؟",
+                "failed_delete_branch": "فشل حذف الفرع",
+                "failed_delete_user": "فشل حذف المستخدم",
+                "failed_delete_team": "فشل حذف الفريق",
+                "failed_delete_point": "فشل حذف النقطة",
+                "team_deleted": "تم حذف الفريق بنجاح!",
+                "point_deleted": "تم حذف النقطة بنجاح!",
+                "no_branches_found": "لم يتم العثور على فروع",
+                "no_users_found": "لم يتم العثور على مستخدمين",
+                "no_teams_found": "لم يتم العثور على فرق",
+                "no_points_found": "لم يتم العثور على نقاط",
+                "no_incidents_found": "لم يتم العثور على حوادث",
+                "system_management": "إدارة النظام"
+            }
+        };
+        
+        function t(key) {
+            return translations[currentLang][key] || key;
+        }
+        
+        function toggleLang() {
+            currentLang = currentLang === 'en' ? 'ar' : 'en';
+            localStorage.setItem('lang', currentLang);
+            applyTranslations();
+        }
+        
+        function applyTranslations() {
+            document.body.dir = currentLang === 'ar' ? 'rtl' : 'ltr';
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                el.innerText = t(el.dataset.i18n);
+            });
+            // Also update select options
+            document.querySelectorAll('option[data-i18n]').forEach(el => {
+                el.innerText = t(el.dataset.i18n);
+            });
+        }
+        
+        // ==================== AUTH & API ====================
+        
+        // Check if logged in
+        if (!authToken) {
+            window.location.href = '/login';
+        }
+        
+        // API wrapper with auth header
+        async function apiGet(endpoint) {
+            const response = await fetch(endpoint, {
+                headers: {
+                    'Authorization': `Bearer ${authToken}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (response.status === 401) {
+                // Token expired or invalid
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = '/login';
+                return null;
+            }
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            
+            return response.json();
+        }
+        
+        async function apiPost(endpoint, data) {
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${authToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+            
+            if (response.status === 401) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = '/login';
+                return null;
+            }
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            
+            return response.json();
+        }
+        
+        async function apiPatch(endpoint, data) {
+            const response = await fetch(endpoint, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${authToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+            
+            if (response.status === 401) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = '/login';
+                return null;
+            }
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                let errorMessage = `HTTP ${response.status}`;
+                try {
+                    const errorData = JSON.parse(errorText);
+                    errorMessage = errorData.error || errorMessage;
+                } catch (e) {
+                    // Keep default message
+                }
+                throw new Error(errorMessage);
+            }
+            
+            return response.ok;
+        }
+        
+        async function apiDelete(endpoint) {
+            const response = await fetch(endpoint, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${authToken}`
+                }
+            });
+            
+            if (response.status === 401) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = '/login';
+                return false;
+            }
+            
+            return response.ok;
+        }
+        
+        // Load current user info
+        async function loadUserInfo() {
+            try {
+                // Try from localStorage first
+                const storedUser = localStorage.getItem('user');
+                if (storedUser) {
+                    currentUser = JSON.parse(storedUser);
+                }
+                
+                // Fetch fresh data from server
+                const userData = await apiGet('/api/auth/me');
+                if (userData) {
+                    currentUser = userData;
+                    localStorage.setItem('user', JSON.stringify(userData));
+                }
+                
+                updateUserUI();
+                await loadBranches();
+            } catch (error) {
+                console.error('Error loading user:', error);
+            }
+        }
+        
+        // Update user info in UI
+        function updateUserUI() {
+            if (!currentUser) return;
+            
+            document.getElementById('user-name').textContent = currentUser.username || 'Unknown';
+            
+            const roleBadge = document.getElementById('user-role');
+            roleBadge.textContent = currentUser.role || 'unknown';
+            roleBadge.className = `role-badge ${currentUser.role}`;
+            
+            // Show Manage tab for admin only
+            if (currentUser.role === 'admin') {
+                document.getElementById('manage-tab-btn').style.display = 'block';
+                document.getElementById('archived-toggle-container').style.display = 'block';
+                loadManagementData();
+            }
+        }
+        
+        // Load management data (branches and users)
+        async function loadManagementData() {
+            if (currentUser.role !== 'admin') return;
+            
+            try {
+                // Load all branches
+                const allBranches = await apiGet('/api/branches?show_all=1') || branches;
+                const branchesList = document.getElementById('branches-list');
+                branchesList.innerHTML = allBranches.map(b => `
+                    <div class="manage-item">
+                        <div class="name">${b.name}</div>
+                        <div class="meta">${b.city}, ${b.region} | Lat: ${b.lat}, Lng: ${b.lng}</div>
+                        <div class="actions">
+                            <button class="btn-edit" onclick="editBranch(${b.id})" data-i18n="edit">Edit</button>
+                            <button class="btn-delete" onclick="deleteBranch(${b.id})" data-i18n="delete">Delete</button>
+                        </div>
+                    </div>
+                `).join('') || '<div class="manage-item"><div class="name">No branches found</div></div>';
+                
+                // Load all users
+                const users = await apiGet('/api/users') || [];
+                const usersList = document.getElementById('users-list');
+                usersList.innerHTML = users.map(u => `
+                    <div class="manage-item">
+                        <div class="name">${u.username}</div>
+                        <div class="meta">${t('role')}: ${u.role}${u.branch_id ? ` | ${t('branch')}: ${u.branch_id}` : ''}${u.region ? ` | ${t('region')}: ${u.region}` : ''}</div>
+                        <div class="actions">
+                            <button class="btn-edit" onclick="editUser(${u.id})" data-i18n="edit">Edit</button>
+                            <button class="btn-delete" onclick="deleteUser(${u.id})" data-i18n="delete">Delete</button>
+                        </div>
+                    </div>
+                `).join('') || '<div class="manage-item"><div class="name">No users found</div></div>';
+            } catch (error) {
+                console.error('Error loading management data:', error);
+            }
+        }
+        
+        // Load branches for selector
+        async function loadBranches() {
+            try {
+                branches = await apiGet('/api/branches') || [];
+                
+                const container = document.getElementById('branch-selector-container');
+                
+                if (currentUser.role === 'operator') {
+                    // Operator: locked to their branch, no selector
+                    const branch = branches.find(b => b.id === currentUser.branch_id);
+                    container.innerHTML = `
+                        <span class="branch-locked">Branch: ${branch?.name || 'Unknown'}</span>
+                    `;
+                    currentBranch = currentUser.branch_id;
+                } else if (currentUser.role === 'regional_admin') {
+                    // Regional admin: show branches in their region
+                    container.innerHTML = `
+                        <label>Branch:</label>
+                        <select id="branch-select" onchange="onBranchChange()">
+                            ${branches.map(b => `<option value="${b.id}">${b.name}</option>`).join('')}
+                        </select>
+                    `;
+                    currentBranch = branches[0]?.id;
+                } else if (currentUser.role === 'admin') {
+                    // Admin: show all branches with "All Branches" option
+                    container.innerHTML = `
+                        <label>Branch:</label>
+                        <select id="branch-select" onchange="onBranchChange()">
+                            <option value="">All Branches</option>
+                            ${branches.map(b => `<option value="${b.id}">${b.name}</option>`).join('')}
+                        </select>
+                    `;
+                    currentBranch = null; // null = all branches
+                }
+            } catch (error) {
+                console.error('Error loading branches:', error);
+            }
+        }
+        
+        // Handle branch change
+        function onBranchChange() {
+            const select = document.getElementById('branch-select');
+            currentBranch = select.value ? parseInt(select.value) : null;
+            loadData();
+        }
+        
+        // Logout
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/login';
+        }
+        
+        // ==================== BRANCH MANAGEMENT ====================
+        
+        let branchPinDropMode = false;
+        let branchTempMarker = null;
+        let branchTempCircle = null;
+        
+        function openBranchModal() {
+            document.getElementById('branch-modal').classList.add('active');
+            document.getElementById('modal-overlay').classList.add('active');
+            
+            // Reset location display
+            const lat = document.getElementById('branch-lat').value;
+            const lng = document.getElementById('branch-lng').value;
+            if (lat && lng) {
+                document.getElementById('branch-location-display').textContent = `Lat: ${parseFloat(lat).toFixed(6)}, Lng: ${parseFloat(lng).toFixed(6)}`;
+            } else {
+                document.getElementById('branch-location-display').textContent = 'Click "Drop Pin on Map" to set location';
+            }
+        }
+        
+        function closeBranchModal() {
+            const bm = document.getElementById('branch-modal');
+            bm.classList.remove('active');
+            bm.style.display = '';
+            document.getElementById('modal-overlay').classList.remove('active');
+            // Clear form
+            document.getElementById('branch-name').value = '';
+            document.getElementById('branch-city').value = '';
+            document.getElementById('branch-region').value = '';
+            document.getElementById('branch-radius').value = '10';
+            document.getElementById('branch-lat').value = '';
+            document.getElementById('branch-lng').value = '';
+            document.getElementById('branch-location-display').textContent = 'Click "Drop Pin on Map" to set location';
+            
+            // Reset modal title and edit mode
+            document.querySelector('#branch-modal h3').textContent = 'Create New Branch';
+            delete bm.dataset.editId;
+            
+            // Disable pin drop mode and clean up
+            disableBranchPinDrop();
+            hidePinDropBanner();
+            
+            // Remove temp markers
+            if (branchTempMarker) {
+                map.removeLayer(branchTempMarker);
+                branchTempMarker = null;
+            }
+            if (branchTempCircle) {
+                map.removeLayer(branchTempCircle);
+                branchTempCircle = null;
+            }
+        }
+        
+        function enableBranchPinDrop() {
+            branchPinDropMode = true;
+            
+            // Hide modal and overlay to allow map interaction
+            document.getElementById('branch-modal').style.display = 'none';
+            document.getElementById('modal-overlay').classList.remove('active');
+            
+            // Show instruction banner on map
+            showPinDropBanner('Click on map to place branch location');
+            
+            // Add click handler to map
+            map.once('click', function(e) {
+                if (branchPinDropMode) {
+                    const lat = e.latlng.lat.toFixed(6);
+                    const lng = e.latlng.lng.toFixed(6);
+                    
+                    document.getElementById('branch-lat').value = lat;
+                    document.getElementById('branch-lng').value = lng;
+                    document.getElementById('branch-location-display').textContent = `Lat: ${lat}, Lng: ${lng}`;
+                    
+                    // Show visual marker and radius circle
+                    showBranchPreview(parseFloat(lat), parseFloat(lng));
+                    
+                    // Re-show modal and hide banner
+                    disableBranchPinDrop();
+                    const bm = document.getElementById('branch-modal');
+                    bm.style.display = '';
+                    bm.classList.add('active');
+                    document.getElementById('modal-overlay').classList.add('active');
+                    hidePinDropBanner();
+                }
+            });
+        }
+        
+        function disableBranchPinDrop() {
+            branchPinDropMode = false;
+        }
+        
+        function showPinDropBanner(text) {
+            // Create banner if it doesn't exist
+            let banner = document.getElementById('pin-drop-banner');
+            if (!banner) {
+                banner = document.createElement('div');
+                banner.id = 'pin-drop-banner';
+                banner.style.cssText = `
+                    position: fixed;
+                    top: 80px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    background: #e94560;
+                    color: white;
+                    padding: 12px 24px;
+                    border-radius: 8px;
+                    font-weight: 600;
+                    z-index: 10001;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                    pointer-events: none;
+                `;
+                document.body.appendChild(banner);
+            }
+            banner.textContent = text;
+            banner.style.display = 'block';
+        }
+        
+        function hidePinDropBanner() {
+            const banner = document.getElementById('pin-drop-banner');
+            if (banner) {
+                banner.style.display = 'none';
+            }
+        }
+        
+        function showBranchPreview(lat, lng) {
+            // Remove existing preview
+            if (branchTempMarker) map.removeLayer(branchTempMarker);
+            if (branchTempCircle) map.removeLayer(branchTempCircle);
+            
+            const radiusKm = parseFloat(document.getElementById('branch-radius').value) || 10;
+            const radiusMeters = radiusKm * 1000;
+            
+            // Add marker
+            branchTempMarker = L.marker([lat, lng], {
+                icon: L.divIcon({
+                    className: 'custom-marker',
+                    html: '📍',
+                    iconSize: [30, 30],
+                    iconAnchor: [15, 30]
+                })
+            }).addTo(map);
+            
+            // Add radius circle
+            branchTempCircle = L.circle([lat, lng], {
+                radius: radiusMeters,
+                color: '#e94560',
+                fillColor: '#e94560',
+                fillOpacity: 0.1,
+                weight: 2,
+                dashArray: '5, 10'
+            }).addTo(map);
+            
+            // Update circle when radius changes
+            document.getElementById('branch-radius').onchange = function() {
+                const newRadiusKm = parseFloat(this.value) || 10;
+                if (branchTempCircle) {
+                    branchTempCircle.setRadius(newRadiusKm * 1000);
+                }
+            };
+        }
+        
+        async function createBranch() {
+            const name = document.getElementById('branch-name').value;
+            const city = document.getElementById('branch-city').value;
+            const region = document.getElementById('branch-region').value;
+            const lat = parseFloat(document.getElementById('branch-lat').value);
+            const lng = parseFloat(document.getElementById('branch-lng').value);
+            const radius = parseFloat(document.getElementById('branch-radius').value) || 10;
+            
+            if (!name || !city || !region || isNaN(lat) || isNaN(lng)) {
+                alert('Please fill all fields and set location on map');
+                return;
+            }
+            
+            const modal = document.getElementById('branch-modal');
+            const editId = modal.dataset.editId;
+            
+            try {
+                let result;
+                if (editId) {
+                    // Edit mode - use PATCH
+                    result = await apiPatch(`/api/branches/${editId}`, {
+                        name, city, region, lat, lng, radius_km: radius
+                    });
+                } else {
+                    // Create mode - use POST
+                    result = await apiPost('/api/branches', {
+                        name, city, region, lat, lng, radius_km: radius
+                    });
+                }
+                
+                if (result) {
+                    // Clear preview
+                    if (branchTempMarker) map.removeLayer(branchTempMarker);
+                    if (branchTempCircle) map.removeLayer(branchTempCircle);
+                    branchTempMarker = null;
+                    branchTempCircle = null;
+                    
+                    closeBranchModal();
+                    await loadBranches();
+                    await loadManagementData();
+                    alert(editId ? 'Branch updated successfully!' : 'Branch created successfully!');
+                }
+            } catch (error) {
+                console.error('Error saving branch:', error);
+                alert('Failed to save branch');
+            }
+        }
+        
+        // ==================== USER MANAGEMENT ====================
+        
+        function openUserModal() {
+            // Populate branch select
+            const branchSelect = document.getElementById('user-branch-select');
+            branchSelect.innerHTML = '<option value="">None (for admin)</option>' +
+                branches.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
+            
+            document.getElementById('user-modal').classList.add('active');
+            document.getElementById('modal-overlay').classList.add('active');
+        }
+        
+        function closeUserModal() {
+            const um = document.getElementById('user-modal');
+            um.classList.remove('active');
+            um.style.display = '';
+            document.getElementById('modal-overlay').classList.remove('active');
+            // Clear form
+            document.getElementById('user-username').value = '';
+            document.getElementById('user-password').value = '';
+            document.getElementById('user-role-select').value = 'operator';
+            document.getElementById('user-branch-select').value = '';
+            document.getElementById('user-region').value = '';
+            
+            // Reset modal title and edit mode
+            document.querySelector('#user-modal h3').textContent = 'Create New User';
+            delete um.dataset.editId;
+        }
+        
+        async function createUser() {
+            const username = document.getElementById('user-username').value;
+            const password = document.getElementById('user-password').value;
+            const role = document.getElementById('user-role-select').value;
+            const branchId = document.getElementById('user-branch-select').value;
+            const region = document.getElementById('user-region').value;
+            
+            if (!username || !role) {
+                alert('Please fill username and role');
+                return;
+            }
+            
+            const modal = document.getElementById('user-modal');
+            const editId = modal.dataset.editId;
+            
+            const payload = { username, role };
+            if (password) payload.password = password; // Only send password if provided
+            if (branchId) payload.branch_id = parseInt(branchId);
+            if (region) payload.region = region;
+            
+            try {
+                let result;
+                if (editId) {
+                    // Edit mode - use PATCH
+                    result = await apiPatch(`/api/users/${editId}`, payload);
+                } else {
+                    // Create mode - use POST
+                    if (!password) {
+                        alert('Password is required for new users');
+                        return;
+                    }
+                    result = await apiPost('/api/users', payload);
+                }
+                
+                if (result) {
+                    closeUserModal();
+                    await loadManagementData();
+                    alert(editId ? 'User updated successfully!' : 'User created successfully!');
+                }
+            } catch (error) {
+                console.error('Error saving user:', error);
+                alert('Failed to save user');
+            }
+        }
+        
+        async function editBranch(branchId) {
+            const branch = branches.find(b => b.id === branchId);
+            if (!branch) return;
+            
+            // Populate modal with branch data
+            document.getElementById('branch-name').value = branch.name;
+            document.getElementById('branch-city').value = branch.city;
+            document.getElementById('branch-region').value = branch.region;
+            document.getElementById('branch-radius').value = branch.radius_km || 10;
+            document.getElementById('branch-lat').value = branch.lat;
+            document.getElementById('branch-lng').value = branch.lng;
+            document.getElementById('branch-location-display').textContent = `${t('lat')}: ${branch.lat}, ${t('lng')}: ${branch.lng}`;
+            
+            // Change modal title to indicate edit mode
+            document.querySelector('#branch-modal h3').textContent = t('edit_branch');
+            
+            // Store branch ID for update
+            document.getElementById('branch-modal').dataset.editId = branchId;
+            
+            // Show modal
+            document.getElementById('branch-modal').classList.add('active');
+            document.getElementById('modal-overlay').classList.add('active');
+        }
+        
+        async function deleteBranch(branchId) {
+            if (!confirm(t('delete_branch_confirm'))) return;
+            
+            try {
+                await apiDelete(`/api/branches/${branchId}`);
+                await loadManagementData();
+                await loadBranches();
+                alert(t('branch_deleted'));
+            } catch (error) {
+                console.error('Error deleting branch:', error);
+                alert(t('failed_delete_branch'));
+            }
+        }
+        
+        async function editUser(userId) {
+            const users = await apiGet('/api/users');
+            const user = users.find(u => u.id === userId);
+            if (!user) return;
+            
+            // Populate modal with user data
+            document.getElementById('user-username').value = user.username;
+            document.getElementById('user-password').value = ''; // Don't show password
+            document.getElementById('user-role-select').value = user.role;
+            document.getElementById('user-branch-select').value = user.branch_id || '';
+            document.getElementById('user-region').value = user.region || '';
+            
+            // Change modal title to indicate edit mode
+            document.querySelector('#user-modal h3').textContent = t('edit_user');
+            
+            // Store user ID for update
+            document.getElementById('user-modal').dataset.editId = userId;
+            
+            // Show modal
+            document.getElementById('user-modal').classList.add('active');
+            document.getElementById('modal-overlay').classList.add('active');
+        }
+        
+        async function deleteUser(userId) {
+            if (!confirm(t('delete_user_confirm'))) return;
+            
+            try {
+                await apiDelete(`/api/users/${userId}`);
+                await loadManagementData();
+                alert(t('user_deleted'));
+            } catch (error) {
+                console.error('Error deleting user:', error);
+                alert(t('failed_delete_user'));
+            }
+        }
         
         // Initialize map
         function initMap() {
-            map = L.map('map').setView([32.8872, 13.1913], 8); // Libya center
+            map = L.map('map').setView([32.1178, 20.0742], 8); // Benghazi center
             
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '© OpenStreetMap contributors'
@@ -896,7 +2665,16 @@
             // Add map click handler for creation based on current tab
             map.on('click', function(e) {
                 clickedLocation = e.latlng;
-                if (currentTab === 'incidents') {
+                if (manualRouteMode) {
+                    // Add waypoint for manual routing
+                    addManualWaypoint(e.latlng.lat, e.latlng.lng);
+                } else if (roadBlockCreationMode) {
+                    openRoadBlockModal(e.latlng.lat, e.latlng.lng);
+                    roadBlockCreationMode = false;
+                    const btn = document.getElementById('road-block-btn');
+                    btn.classList.remove('active');
+                    btn.textContent = '🚧 Add Road Block';
+                } else if (currentTab === 'incidents') {
                     openIncidentModal(e.latlng.lat, e.latlng.lng);
                 } else if (currentTab === 'points' && pointCreationMode) {
                     openPointModal(e.latlng.lat, e.latlng.lng);
@@ -913,24 +2691,45 @@
             showLoading(true);
             
             try {
-                const [incidentsRes, teamsRes, routesRes, pointsRes, reportsRes] = await Promise.all([
-                    fetch('/api/incidents'),
-                    fetch('/api/teams'),
-                    fetch('/api/routes'),
-                    fetch('/api/points'),
-                    fetch('/api/reports/summary')
+                // Build query params with branch_id if selected (admin/regional only)
+                let queryParams = '';
+                if (currentBranch && (currentUser.role === 'admin' || currentUser.role === 'regional_admin')) {
+                    queryParams = `?branch_id=${currentBranch}`;
+                }
+                
+                // Check if archived toggle is checked (admin only)
+                const showArchived = document.getElementById('show-archived')?.checked;
+                const incidentsEndpoint = (showArchived && currentUser.role === 'admin')
+                    ? '/api/incidents/archived'
+                    : `/api/incidents${queryParams}`;
+                
+                // Use authenticated API wrappers with optional branch filter
+                const [incidentsData, teamsData, routesData, pointsData, reportsData, roadBlocksData] = await Promise.all([
+                    apiGet(incidentsEndpoint),
+                    apiGet(`/api/teams${queryParams}`),
+                    apiGet('/api/routes'),
+                    apiGet('/api/points'),
+                    apiGet('/api/reports/summary'),
+                    apiGet('/api/road-blocks')
                 ]);
                 
-                incidents = await incidentsRes.json();
-                teams = await teamsRes.json();
-                routes = await routesRes.json();
-                points = await pointsRes.json();
-                const reports = await reportsRes.json();
+                incidents = incidentsData || [];
+                teams = teamsData || [];
+                routes = routesData || [];
+                points = pointsData || [];
+                roadBlocks = roadBlocksData || [];
+                
+                // Filter out resolved incidents unless toggle is checked
+                const showResolved = document.getElementById('show-resolved')?.checked;
+                if (!showResolved) {
+                    incidents = incidents.filter(inc => inc.status !== 'resolved' && inc.status !== 'closed');
+                }
                 
                 updateMap();
                 updateSidebar();
-                updateReports(reports);
+                updateReports(reportsData || {});
                 updateStatus(true);
+                applyTranslations();
                 
             } catch (error) {
                 console.error('Error loading data:', error);
@@ -947,34 +2746,40 @@
             Object.values(teamMarkers).forEach(marker => map.removeLayer(marker));
             Object.values(routeLines).forEach(line => map.removeLayer(line));
             Object.values(pointMarkers).forEach(marker => map.removeLayer(marker));
+            Object.values(roadBlockMarkers).forEach(marker => map.removeLayer(marker));
             
             incidentMarkers = {};
             teamMarkers = {};
             routeLines = {};
             pointMarkers = {};
+            roadBlockMarkers = {};
             
             // Add incident markers with severity-based colors
             incidents.forEach(incident => {
-                if (incident.status === 'active' || incident.status === 'open' || incident.status === 'assigned') {
-                    const severity = parseInt(incident.severity) || 3;
-                    const color = severity >= 3 ? '#e94560' : '#f39c12'; // Red for 3-5, orange for 1-2
-                    
-                    const marker = L.circleMarker([incident.lat, incident.lng], {
-                        radius: 10,
-                        fillColor: color,
-                        color: '#fff',
-                        weight: 2,
-                        opacity: 1,
-                        fillOpacity: 0.8
-                    }).addTo(map);
-                    
-                    marker.on('click', (e) => {
-                        L.DomEvent.stopPropagation(e);
+                const severity = parseInt(incident.severity) || 3;
+                const color = severity >= 3 ? '#e94560' : '#f39c12'; // Red for 3-5, orange for 1-2
+                
+                const marker = L.circleMarker([incident.lat, incident.lng], {
+                    radius: 10,
+                    fillColor: color,
+                    color: '#fff',
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.8
+                }).addTo(map);
+                
+                marker.on('click', (e) => {
+                    L.DomEvent.stopPropagation(e);
+                    if (manualRouteMode) {
+                        // In manual mode, clicking incident adds it as a waypoint and selects it
+                        selectedIncident = incident;
+                        addManualWaypoint(incident.lat, incident.lng);
+                    } else {
                         showIncidentDetail(incident);
-                    });
-                    
-                    incidentMarkers[incident.id] = marker;
-                }
+                    }
+                });
+                
+                incidentMarkers[incident.id] = marker;
             });
             
             // Add team markers
@@ -1031,11 +2836,11 @@
                 marker.bindPopup(`
                     <div class="popup-content">
                         <h3>${team.team_number ? '#' + team.team_number + ' - ' : ''}${team.name}</h3>
-                        <p>Status: ${team.status}</p>
+                        <p>${t('status')}: ${team.status}</p>
                         <p>Mode: ${stateLabel}</p>
                         <p>Last Update: ${lastUpdatedText}</p>
-                        <p>Lat: ${team.lat.toFixed(4)}</p>
-                        <p>Lng: ${team.lng.toFixed(4)}</p>
+                        <p>${t('lat')}: ${team.lat.toFixed(4)}</p>
+                        <p>${t('lng')}: ${team.lng.toFixed(4)}</p>
                     </div>
                 `);
                 
@@ -1049,20 +2854,14 @@
                         // Update marker position immediately
                         marker.setLatLng([newLat, newLng]);
                         
-                        // Send update to backend
+                        // Send update to backend using authenticated API
                         try {
-                            const response = await fetch(`/api/teams/${team.id}`, {
-                                method: 'PATCH',
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify({
-                                    lat: newLat,
-                                    lng: newLng
-                                })
+                            const result = await apiPatch(`/api/teams/${team.id}`, {
+                                lat: newLat,
+                                lng: newLng
                             });
                             
-                            if (response.ok) {
+                            if (result) {
                                 await loadData();
                             }
                         } catch (error) {
@@ -1089,10 +2888,10 @@
                     
                     line.bindPopup(`
                         <div class="popup-content">
-                            <h3>Route</h3>
-                            <p>ETA: ${eta} min</p>
-                            <p>Distance: ${distance} km</p>
-                            <p>Source: ${route.source || 'N/A'}</p>
+                            <h3>${t('route')}</h3>
+                            <p>${t('eta')}: ${eta} min</p>
+                            <p>${t('distance')}: ${distance} km</p>
+                            <p>${t('source')}: ${route.source || 'N/A'}</p>
                         </div>
                     `);
                     
@@ -1147,13 +2946,56 @@
                 marker.bindPopup(`
                     <div class="popup-content">
                         <h3>${point.name}</h3>
-                        <p>Type: ${point.type}</p>
-                        <p>Lat: ${point.lat.toFixed(4)}</p>
-                        <p>Lng: ${point.lng.toFixed(4)}</p>
+                        <p>${t('type')}: ${point.type}</p>
+                        <p>${t('lat')}: ${point.lat.toFixed(4)}</p>
+                        <p>${t('lng')}: ${point.lng.toFixed(4)}</p>
                     </div>
                 `);
                 
                 pointMarkers[point.id] = marker;
+            });
+            
+            // Add road block markers (colored circles)
+            roadBlocks.forEach(block => {
+                let color, statusLabel;
+                switch (block.status) {
+                    case 'closed':
+                        color = '#e74c3c'; // Red
+                        statusLabel = 'Closed';
+                        break;
+                    case 'restricted':
+                        color = '#f39c12'; // Orange
+                        statusLabel = 'Restricted';
+                        break;
+                    case 'open':
+                        color = '#27ae60'; // Green
+                        statusLabel = 'Open';
+                        break;
+                    default:
+                        color = '#95a5a6';
+                        statusLabel = block.status;
+                }
+                
+                const circle = L.circle([block.lat, block.lng], {
+                    color: color,
+                    fillColor: color,
+                    fillOpacity: 0.4,
+                    radius: block.radius || 200,
+                    weight: 2
+                }).addTo(map);
+                
+                circle.bindPopup(`
+                    <div class="popup-content">
+                        <h3>🚧 ${statusLabel}</h3>
+                        <p><strong>Reason:</strong> ${block.reason || 'N/A'}</p>
+                        <p><strong>Radius:</strong> ${block.radius || 200}m</p>
+                        <p><strong>Severity:</strong> ${block.severity || 3}</p>
+                        ${block.expires_at ? `<p><strong>Expires:</strong> ${new Date(block.expires_at).toLocaleString()}</p>` : ''}
+                        <button onclick="deleteRoadBlock(${block.id})" style="background: #e74c3c; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-top: 10px;">Delete</button>
+                    </div>
+                `);
+                
+                roadBlockMarkers[block.id] = circle;
             });
         }
         
@@ -1192,25 +3034,17 @@
             closeIncidentModal();
             
             try {
-                const response = await fetch('/api/incidents', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        type: type,
-                        severity: parseInt(severity),
-                        lat: lat,
-                        lng: lng
-                    })
+                const result = await apiPost('/api/incidents', {
+                    type: type,
+                    severity: parseInt(severity),
+                    lat: lat,
+                    lng: lng
                 });
                 
-                const result = await response.json();
-                
-                if (response.ok) {
+                if (result) {
                     await loadData();
                 } else {
-                    console.error('Error creating incident:', result.error);
+                    console.error('Error creating incident');
                 }
             } catch (error) {
                 console.error('Error creating incident:', error);
@@ -1231,17 +3065,11 @@
             closeDetailPanel();
             
             try {
-                const response = await fetch(`/api/incidents/${incidentId}`, {
-                    method: 'PATCH',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        status: 'resolved'
-                    })
+                const result = await apiPatch(`/api/incidents/${incidentId}`, {
+                    status: 'resolved'
                 });
                 
-                if (response.ok) {
+                if (result) {
                     await loadData();
                 }
             } catch (error) {
@@ -1257,16 +3085,18 @@
                 return;
             }
             
+            if (!confirm(t('delete_incident_confirm'))) {
+                return;
+            }
+            
             const incidentId = selectedIncident.id;
             showLoading(true);
             closeDetailPanel();
             
             try {
-                const response = await fetch(`/api/incidents/${incidentId}`, {
-                    method: 'DELETE'
-                });
+                const success = await apiDelete(`/api/incidents/${incidentId}`);
                 
-                if (response.ok) {
+                if (success) {
                     await loadData();
                 }
             } catch (error) {
@@ -1288,18 +3118,12 @@
             showLoading(true);
             
             try {
-                const response = await fetch(`/api/incidents/${incidentId}`, {
-                    method: 'PATCH',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        type: type,
-                        severity: parseInt(severity)
-                    })
+                const result = await apiPatch(`/api/incidents/${incidentId}`, {
+                    type: type,
+                    severity: parseInt(severity)
                 });
                 
-                if (response.ok) {
+                if (result) {
                     await loadData();
                     closeDetailPanel();
                 }
@@ -1321,6 +3145,39 @@
             document.getElementById('detail-location').textContent = 
                 `${incident.lat.toFixed(4)}, ${incident.lng.toFixed(4)}`;
             
+            // Show report button if incident is resolved
+            const reportBtn = document.getElementById('report-btn');
+            if (incident.status === 'resolved' || incident.status === 'closed') {
+                reportBtn.style.display = 'inline-block';
+            } else {
+                reportBtn.style.display = 'none';
+            }
+            
+            // Show archive button for admin only
+            const archiveBtn = document.getElementById('archive-btn');
+            if (currentUser.role === 'admin') {
+                archiveBtn.style.display = 'inline-block';
+            } else {
+                archiveBtn.style.display = 'none';
+            }
+            
+            // Populate assigned teams list
+            const assignedTeamsList = document.getElementById('assigned-teams-list');
+            const assignedTeamIds = incident.assigned_teams ? JSON.parse(incident.assigned_teams) : [];
+            if (assignedTeamIds.length > 0) {
+                assignedTeamsList.innerHTML = assignedTeamIds.map(teamId => {
+                    const team = teams.find(t => t.id === teamId);
+                    if (team) {
+                        return `<span style="display: inline-block; background: #3498db; color: white; padding: 2px 8px; border-radius: 3px; margin-right: 5px; margin-bottom: 5px; font-size: 12px;">
+                            ${team.team_number ? '#' + team.team_number + ' ' : ''}${team.name}
+                        </span>`;
+                    }
+                    return '';
+                }).join('');
+            } else {
+                assignedTeamsList.innerHTML = '<span style="color: #999; font-size: 12px;">No teams assigned</span>';
+            }
+            
             // Populate team dropdown
             const teamSelect = document.getElementById('assign-team-select');
             teamSelect.innerHTML = '<option value="">-- Select Team --</option>';
@@ -1334,14 +3191,166 @@
                 teamSelect.appendChild(option);
             });
             
+            // Load report if exists
+            loadIncidentReport(incident.id);
+            
             document.getElementById('incident-detail-panel').classList.add('active');
             document.getElementById('modal-overlay').classList.add('active');
+            
+            applyTranslations();
+        }
+        
+        async function loadIncidentReport(incidentId) {
+            try {
+                const report = await apiGet(`/api/incidents/${incidentId}/report`);
+                if (report && report.exists) {
+                    document.getElementById('report-section').style.display = 'block';
+                    document.getElementById('report-summary-display').textContent = report.summary || 'N/A';
+                    document.getElementById('report-actions-display').textContent = report.actions_taken || 'N/A';
+                    document.getElementById('report-casualties-display').textContent = report.casualties || 'None';
+                    document.getElementById('report-resources-display').textContent = report.resources_used || 'N/A';
+                    document.getElementById('report-notes-display').textContent = report.notes || 'N/A';
+                } else {
+                    document.getElementById('report-section').style.display = 'none';
+                }
+            } catch (error) {
+                document.getElementById('report-section').style.display = 'none';
+            }
+            
+            applyTranslations();
         }
         
         function closeDetailPanel() {
             document.getElementById('incident-detail-panel').classList.remove('active');
             document.getElementById('modal-overlay').classList.remove('active');
             selectedIncident = null;
+        }
+        
+        async function showTimeline() {
+            if (!selectedIncident) return;
+            
+            try {
+                const logs = await apiGet(`/api/incidents/${selectedIncident.id}/logs`);
+                const timelineContent = document.getElementById('timeline-content');
+                
+                if (logs && logs.length > 0) {
+                    timelineContent.innerHTML = logs.map(log => {
+                        const timestamp = new Date(log.timestamp).toLocaleString();
+                        const details = log.details ? JSON.parse(log.details) : {};
+                        let detailText = '';
+                        
+                        if (log.action === 'created') {
+                            detailText = `Type: ${details.type}`;
+                        } else if (log.action === 'assigned_team') {
+                            const team = teams.find(t => t.id === details.team_id);
+                            detailText = `Team: ${team ? team.name : details.team_id}`;
+                        } else if (log.action === 'team_status_updated') {
+                            const team = teams.find(t => t.id === details.team_id);
+                            detailText = `Team: ${team ? team.name : details.team_id} → ${details.status}`;
+                        } else if (log.action === 'resolved') {
+                            detailText = 'Incident marked as resolved';
+                        } else if (log.action === 'closed') {
+                            detailText = 'Incident closed';
+                        } else if (log.action === 'archived') {
+                            detailText = 'Incident archived';
+                        } else if (log.action === 'report_created') {
+                            detailText = 'Report submitted';
+                        }
+                        
+                        return `
+                            <div style="border-left: 3px solid #9b59b6; padding-left: 15px; margin-bottom: 15px;">
+                                <div style="font-weight: bold; color: #9b59b6;">${log.action}</div>
+                                <div style="font-size: 12px; color: #666;">${timestamp}</div>
+                                ${detailText ? `<div style="font-size: 13px; margin-top: 5px;">${detailText}</div>` : ''}
+                            </div>
+                        `;
+                    }).join('');
+                } else {
+                    timelineContent.innerHTML = '<div style="color: #999; text-align: center;">No timeline entries found</div>';
+                }
+                
+                document.getElementById('timeline-modal').classList.add('active');
+                document.getElementById('modal-overlay').classList.add('active');
+            } catch (error) {
+                console.error('Error loading timeline:', error);
+                alert('Failed to load timeline');
+            }
+        }
+        
+        function closeTimelineModal() {
+            document.getElementById('timeline-modal').classList.remove('active');
+            document.getElementById('modal-overlay').classList.remove('active');
+        }
+        
+        function showReportModal() {
+            document.getElementById('report-modal').classList.add('active');
+            document.getElementById('modal-overlay').classList.add('active');
+        }
+        
+        function closeReportModal() {
+            document.getElementById('report-modal').classList.remove('active');
+            document.getElementById('modal-overlay').classList.remove('active');
+            // Clear form
+            document.getElementById('report-summary').value = '';
+            document.getElementById('report-actions').value = '';
+            document.getElementById('report-casualties').value = '';
+            document.getElementById('report-resources').value = '';
+            document.getElementById('report-notes').value = '';
+        }
+        
+        async function submitReport() {
+            if (!selectedIncident) return;
+            
+            const summary = document.getElementById('report-summary').value;
+            const actionsTaken = document.getElementById('report-actions').value;
+            const casualties = document.getElementById('report-casualties').value;
+            const resourcesUsed = document.getElementById('report-resources').value;
+            const notes = document.getElementById('report-notes').value;
+            
+            try {
+                const result = await apiPost(`/api/incidents/${selectedIncident.id}/report`, {
+                    summary,
+                    actions_taken: actionsTaken,
+                    casualties,
+                    resources_used: resourcesUsed,
+                    notes
+                });
+                
+                if (result) {
+                    closeReportModal();
+                    alert('Report submitted successfully!');
+                    // Reload incident data to show report
+                    await loadData();
+                    // Reload report display
+                    await loadIncidentReport(selectedIncident.id);
+                    // Hide report button since report now exists
+                    document.getElementById('report-btn').style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Error submitting report:', error);
+                alert('Failed to submit report');
+            }
+        }
+        
+        async function archiveIncident() {
+            if (!selectedIncident) return;
+            
+            if (!confirm('Are you sure you want to archive this incident? It will be hidden from the active view.')) {
+                return;
+            }
+            
+            try {
+                const result = await apiPatch(`/api/incidents/${selectedIncident.id}/archive`, {});
+                
+                if (result) {
+                    closeDetailPanel();
+                    await loadData();
+                    alert('Incident archived successfully!');
+                }
+            } catch (error) {
+                console.error('Error archiving incident:', error);
+                alert('Failed to archive incident');
+            }
         }
         
         // Haversine distance calculation
@@ -1394,18 +3403,12 @@
             showLoading(true);
             
             try {
-                const response = await fetch(`/api/incidents/${selectedIncident.id}`, {
-                    method: 'PATCH',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        assigned_team_id: parseInt(teamId),
-                        status: 'assigned'
-                    })
+                const result = await apiPatch(`/api/incidents/${selectedIncident.id}`, {
+                    assign_team_id: parseInt(teamId),
+                    status: 'assigned'
                 });
                 
-                if (response.ok) {
+                if (result) {
                     await loadData();
                     closeDetailPanel();
                 } else {
@@ -1433,24 +3436,22 @@
             showLoading(true);
             
             try {
-                const response = await fetch('/api/routes/generate', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        team_id: parseInt(teamId),
-                        incident_id: selectedIncident.id
-                    })
+                const result = await apiPost('/api/routes/generate', {
+                    team_id: parseInt(teamId),
+                    incident_id: selectedIncident.id
                 });
                 
-                const result = await response.json();
-                
-                if (response.ok) {
-                    await loadData();
-                    alert('Route created successfully');
+                if (result) {
+                    // Check if route is blocked by road blocks
+                    if (result.path && isRouteBlocked(result.path)) {
+                        await loadData();
+                        alert('⚠️ Route created but intersects blocked roads. Please review the route and consider removing road blocks or adjusting manually.');
+                    } else {
+                        await loadData();
+                        alert('Route created successfully');
+                    }
                 } else {
-                    alert('Error creating route: ' + (result.error || 'Unknown error'));
+                    alert('Error creating route');
                 }
             } catch (error) {
                 console.error('Error creating route:', error);
@@ -1478,23 +3479,15 @@
             closeDetailPanel();
             
             try {
-                const response = await fetch('/api/routes/generate', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        incident_id: incidentId,
-                        team_id: nearestTeam.id
-                    })
+                const result = await apiPost('/api/routes/generate', {
+                    incident_id: incidentId,
+                    team_id: nearestTeam.id
                 });
                 
-                const result = await response.json();
-                
-                if (response.ok) {
+                if (result) {
                     await loadData();
                 } else {
-                    console.error('Error generating route:', result.error);
+                    console.error('Error generating route');
                 }
             } catch (error) {
                 console.error('Error generating route:', error);
@@ -1508,6 +3501,8 @@
             currentTab = tabName;
             teamCreationMode = false;
             pointCreationMode = false;
+            manualRouteMode = false;
+            clearManualRoute();
             
             // Update tab buttons
             document.querySelectorAll('.sidebar-tab').forEach(tab => {
@@ -1554,11 +3549,186 @@
             }, 5000);
         }
         
+        // Manual routing functions
+        function enableManualRouteForIncident() {
+            // Enable manual mode and close detail panel to allow map interaction
+            manualRouteMode = true;
+            const btn = document.getElementById('manual-route-btn');
+            const controls = document.getElementById('manual-route-controls');
+            
+            btn.classList.add('active');
+            btn.textContent = '✏️ Manual Route (ON)';
+            btn.style.background = '#3498db';
+            controls.style.display = 'flex';
+            
+            // Close detail panel to allow map clicking
+            closeDetailPanel();
+        }
+        
+        function toggleManualRouteMode() {
+            manualRouteMode = !manualRouteMode;
+            const btn = document.getElementById('manual-route-btn');
+            const controls = document.getElementById('manual-route-controls');
+            
+            if (manualRouteMode) {
+                btn.classList.add('active');
+                btn.textContent = '✏️ Manual Route (ON)';
+                btn.style.background = '#3498db';
+                controls.style.display = 'flex';
+            } else {
+                btn.classList.remove('active');
+                btn.textContent = '✏️ Manual Route';
+                btn.style.background = '#e94560';
+                controls.style.display = 'none';
+                clearManualRoute();
+            }
+        }
+        
+        function addManualWaypoint(lat, lng) {
+            manualWaypoints.push({lat, lng});
+            
+            // Add marker
+            const marker = L.marker([lat, lng], {
+                icon: L.divIcon({
+                    className: 'waypoint-marker',
+                    html: '<div style="background: #3498db; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>',
+                    iconSize: [20, 20],
+                    iconAnchor: [10, 10]
+                })
+            }).addTo(map);
+            waypointMarkers.push(marker);
+            
+            // Update preview polyline
+            updateManualRoutePreview();
+        }
+        
+        function updateManualRoutePreview() {
+            if (manualPolyline) {
+                map.removeLayer(manualPolyline);
+            }
+            
+            if (manualWaypoints.length > 1) {
+                const latlngs = manualWaypoints.map(wp => [wp.lat, wp.lng]);
+                manualPolyline = L.polyline(latlngs, {
+                    color: '#3498db',
+                    weight: 3,
+                    opacity: 0.7,
+                    dashArray: '5, 5'
+                }).addTo(map);
+            }
+        }
+        
+        function clearManualRoute() {
+            manualWaypoints = [];
+            waypointMarkers.forEach(marker => map.removeLayer(marker));
+            waypointMarkers = [];
+            if (manualPolyline) {
+                map.removeLayer(manualPolyline);
+                manualPolyline = null;
+            }
+        }
+        
+        function undoLastWaypoint() {
+            if (manualWaypoints.length > 0) {
+                manualWaypoints.pop();
+                const marker = waypointMarkers.pop();
+                if (marker) map.removeLayer(marker);
+                updateManualRoutePreview();
+            }
+        }
+        
+        async function saveManualRoute() {
+            if (manualWaypoints.length < 1) {
+                alert('Please add at least one waypoint');
+                return;
+            }
+            
+            if (!selectedIncident || !selectedIncident.id) {
+                alert('Please click on an incident marker on the map to select it first');
+                return;
+            }
+            
+            const teamId = document.getElementById('assign-team-select').value;
+            if (!teamId) {
+                alert('Please select a team from the incident detail panel');
+                return;
+            }
+            
+            try {
+                const result = await apiPost('/api/manual-routes', {
+                    team_id: parseInt(teamId),
+                    incident_id: selectedIncident.id,
+                    waypoints: manualWaypoints
+                });
+                
+                if (result) {
+                    alert('Manual route saved successfully');
+                    clearManualRoute();
+                    toggleManualRouteMode();
+                }
+            } catch (error) {
+                console.error('Error saving manual route:', error);
+                alert('Error saving manual route: ' + error.message);
+            }
+        }
+        
+        async function generateManualRoute() {
+            if (manualWaypoints.length < 1) {
+                alert('Please add at least one waypoint');
+                return;
+            }
+            
+            if (!selectedIncident || !selectedIncident.id) {
+                alert('Please click on an incident marker on the map to select it first');
+                return;
+            }
+            
+            const teamId = document.getElementById('assign-team-select').value;
+            if (!teamId) {
+                alert('Please select a team from the incident detail panel');
+                return;
+            }
+            
+            showLoading(true);
+            
+            try {
+                const result = await apiPost('/api/routes/generate', {
+                    team_id: parseInt(teamId),
+                    incident_id: selectedIncident.id,
+                    manual_mode: true,
+                    waypoints: manualWaypoints
+                });
+                
+                if (result && result.status === 'invalid') {
+                    alert('❌ ' + result.message);
+                } else if (result) {
+                    await loadData();
+                    alert('Manual route generated successfully');
+                    clearManualRoute();
+                    toggleManualRouteMode();
+                } else {
+                    alert('Error generating manual route');
+                }
+            } catch (error) {
+                console.error('Error generating manual route:', error);
+                alert('Error generating manual route: ' + error.message);
+            }
+            
+            showLoading(false);
+        }
+        
         // Team modal functions
         function openTeamModal(lat, lng) {
             if (lat && lng) {
                 document.getElementById('team-lat').value = lat;
                 document.getElementById('team-lng').value = lng;
+            }
+            // Populate branch dropdown
+            const branchSelect = document.getElementById('team-branch');
+            branchSelect.innerHTML = branches.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
+            // Set default to user's branch if available
+            if (currentUser.branch_id) {
+                branchSelect.value = currentUser.branch_id;
             }
             document.getElementById('team-modal').classList.add('active');
             document.getElementById('modal-overlay').classList.add('active');
@@ -1576,10 +3746,11 @@
         async function createTeam() {
             const teamNumber = document.getElementById('team-number').value;
             const name = document.getElementById('team-name').value;
+            const branchId = document.getElementById('team-branch').value;
             const lat = parseFloat(document.getElementById('team-lat').value);
             const lng = parseFloat(document.getElementById('team-lng').value);
             
-            if (!name || isNaN(lat) || isNaN(lng)) {
+            if (!name || isNaN(lat) || isNaN(lng) || !branchId) {
                 return;
             }
             
@@ -1591,20 +3762,15 @@
                     name: name,
                     lat: lat,
                     lng: lng,
+                    branch_id: parseInt(branchId),
                     status: 'available'
                 };
                 if (teamNumber) {
                     payload.team_number = parseInt(teamNumber);
                 }
-                const response = await fetch('/api/teams', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(payload)
-                });
+                const result = await apiPost('/api/teams', payload);
                 
-                if (response.ok) {
+                if (result) {
                     await loadData();
                 }
             } catch (error) {
@@ -1622,10 +3788,18 @@
             document.getElementById('edit-team-id').value = team.id;
             document.getElementById('edit-team-number').value = team.team_number || '';
             document.getElementById('edit-team-name').value = team.name;
-            document.getElementById('edit-team-status').value = team.status;
+            const statusSelect = document.getElementById('edit-team-status');
+            const validStatuses = Array.from(statusSelect.options).map(o => o.value);
+            statusSelect.value = validStatuses.includes(team.status) ? team.status : 'available';
             document.getElementById('edit-team-color').value = team.color || '#3498db';
             document.getElementById('edit-team-icon').value = team.icon || '🚑';
             document.getElementById('edit-team-gps').value = team.gps_enabled ? '1' : '0';
+            
+            // Populate branch dropdown
+            const branchSelect = document.getElementById('edit-team-branch');
+            branchSelect.innerHTML = branches.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
+            // Set to team's current branch
+            branchSelect.value = team.branch_id || (currentUser.branch_id || branches[0]?.id);
             
             document.getElementById('team-edit-modal').classList.add('active');
             document.getElementById('modal-overlay').classList.add('active');
@@ -1636,17 +3810,237 @@
             document.getElementById('modal-overlay').classList.remove('active');
         }
         
+        function openTeamReportModal(teamId, incidentId) {
+            document.getElementById('report-team-id').value = teamId;
+            document.getElementById('report-incident-id').value = incidentId || '';
+            document.getElementById('report-type').value = 'status';
+            document.getElementById('report-priority').value = '3';
+            document.getElementById('report-message').value = '';
+            
+            // Get team location for GPS fallback
+            const team = teams.find(t => t.id === parseInt(teamId));
+            if (team) {
+                document.getElementById('report-lat').value = team.lat;
+                document.getElementById('report-lng').value = team.lng;
+            }
+            
+            document.getElementById('team-report-modal').classList.add('active');
+            document.getElementById('modal-overlay').classList.add('active');
+        }
+        
+        function closeTeamReportModal() {
+            document.getElementById('team-report-modal').classList.remove('active');
+            document.getElementById('modal-overlay').classList.remove('active');
+        }
+        
+        async function submitTeamReport() {
+            const teamId = document.getElementById('report-team-id').value;
+            const incidentId = document.getElementById('report-incident-id').value;
+            const reportType = document.getElementById('report-type').value;
+            const priority = parseInt(document.getElementById('report-priority').value);
+            const message = document.getElementById('report-message').value;
+            const lat = document.getElementById('report-lat').value;
+            const lng = document.getElementById('report-lng').value;
+            
+            if (!teamId || !reportType) {
+                alert('Team ID and Type are required');
+                return;
+            }
+            
+            if (!message) {
+                alert('Please enter a message');
+                return;
+            }
+            
+            showLoading(true);
+            
+            try {
+                const result = await apiPost('/api/team-reports', {
+                    team_id: parseInt(teamId),
+                    incident_id: incidentId ? parseInt(incidentId) : null,
+                    type: reportType,
+                    priority: priority,
+                    message: message,
+                    lat: lat ? parseFloat(lat) : null,
+                    lng: lng ? parseFloat(lng) : null
+                });
+                
+                if (result) {
+                    alert('✅ Report sent successfully');
+                    closeTeamReportModal();
+                    loadTeamReports(); // Refresh reports display
+                }
+            } catch (error) {
+                console.error('Error sending report:', error);
+                alert('Error sending report: ' + error.message);
+            }
+            
+            showLoading(false);
+        }
+        
+        let teamReports = [];
+        let reportMarkers = {};
+        
+        async function loadTeamReports() {
+            try {
+                const reports = await apiGet('/api/team-reports/recent?minutes=1440'); // Last 24 hours
+                teamReports = reports || [];
+                renderFieldReportsPanel();
+                renderReportMarkers();
+            } catch (error) {
+                console.error('Error loading team reports:', error);
+            }
+        }
+        
+        function renderFieldReportsPanel() {
+            const panel = document.getElementById('field-reports-panel');
+            if (!panel) return;
+            
+            const list = document.getElementById('field-reports-list');
+            list.innerHTML = '';
+            
+            if (teamReports.length === 0) {
+                list.innerHTML = '<p style="padding: 15px; color: #888; text-align: center;">No recent reports</p>';
+                return;
+            }
+            
+            teamReports.forEach(report => {
+                const item = document.createElement('div');
+                item.className = 'report-item';
+                
+                const typeColors = {
+                    'hazard': '#e74c3c',
+                    'request': '#f39c12',
+                    'status': '#3498db',
+                    'update': '#7f8c8d'
+                };
+                const typeIcons = {
+                    'hazard': '🔥',
+                    'request': '📢',
+                    'status': '📍',
+                    'update': '📝'
+                };
+                
+                const color = typeColors[report.type] || '#3498db';
+                const icon = typeIcons[report.type] || '📡';
+                
+                const team = teams.find(t => t.id === report.team_id);
+                const teamName = team ? (team.team_number ? '#' + team.team_number + ' - ' + team.name : team.name) : 'Team ' + report.team_id;
+                
+                const time = new Date(report.created_at).toLocaleTimeString();
+                
+                item.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                        <div>
+                            <span style="display: inline-block; background: ${color}; color: white; padding: 2px 8px; border-radius: 3px; font-size: 11px; margin-right: 5px;">
+                                ${icon} ${report.type.toUpperCase()}
+                            </span>
+                            <span style="display: inline-block; background: #f39c12; color: white; padding: 2px 6px; border-radius: 3px; font-size: 10px;">
+                                P${report.priority}
+                            </span>
+                        </div>
+                        <span style="font-size: 11px; color: #888;">${time}</span>
+                    </div>
+                    <p style="margin: 5px 0; font-size: 13px;">${report.message || 'No message'}</p>
+                    <div style="font-size: 11px; color: #666;">
+                        ${teamName} ${report.lat && report.lng ? `• ${report.lat.toFixed(4)}, ${report.lng.toFixed(4)}` : ''}
+                    </div>
+                `;
+                
+                item.onclick = () => {
+                    if (report.lat && report.lng) {
+                        map.panTo([report.lat, report.lng]);
+                        const marker = reportMarkers[report.id];
+                        if (marker) marker.openPopup();
+                    }
+                };
+                
+                list.appendChild(item);
+            });
+        }
+        
+        function renderReportMarkers() {
+            // Clear existing markers
+            Object.values(reportMarkers).forEach(marker => map.removeLayer(marker));
+            reportMarkers = {};
+            
+            const typeColors = {
+                'hazard': '#e74c3c',
+                'request': '#f39c12',
+                'status': '#3498db',
+                'update': '#7f8c8d'
+            };
+            
+            teamReports.forEach(report => {
+                if (!report.lat || !report.lng) return;
+                
+                const color = typeColors[report.type] || '#3498db';
+                
+                const marker = L.circleMarker([report.lat, report.lng], {
+                    radius: 8,
+                    fillColor: color,
+                    color: '#fff',
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.8
+                }).addTo(map);
+                
+                const team = teams.find(t => t.id === report.team_id);
+                const teamName = team ? team.name : 'Team ' + report.team_id;
+                
+                marker.bindPopup(`
+                    <div style="font-size: 13px;">
+                        <strong>${report.type.toUpperCase()} (P${report.priority})</strong><br>
+                        ${report.message || 'No message'}<br>
+                        <em>${teamName}</em><br>
+                        <small>${new Date(report.created_at).toLocaleString()}</small>
+                    </div>
+                `);
+                
+                reportMarkers[report.id] = marker;
+            });
+        }
+        
+        function filterReports() {
+            const typeFilter = document.getElementById('report-filter-type').value;
+            const priorityFilter = document.getElementById('report-filter-priority').value;
+            
+            let filtered = teamReports;
+            
+            if (typeFilter) {
+                filtered = filtered.filter(r => r.type === typeFilter);
+            }
+            
+            if (priorityFilter) {
+                filtered = filtered.filter(r => r.priority === parseInt(priorityFilter));
+            }
+            
+            // Temporarily replace teamReports for rendering
+            const originalReports = teamReports;
+            teamReports = filtered;
+            renderFieldReportsPanel();
+            teamReports = originalReports;
+        }
+        
         async function updateTeam() {
             const teamId = document.getElementById('edit-team-id').value;
             const teamNumber = document.getElementById('edit-team-number').value;
             const name = document.getElementById('edit-team-name').value;
-            const status = document.getElementById('edit-team-status').value;
+            const branchId = document.getElementById('edit-team-branch').value;
+            let status = document.getElementById('edit-team-status').value;
             const color = document.getElementById('edit-team-color').value;
             const icon = document.getElementById('edit-team-icon').value;
             const gpsEnabled = document.getElementById('edit-team-gps').value === '1' ? 1 : 0;
             
             if (!name || !teamId) {
                 return;
+            }
+            
+            // Fallback to current team status if dropdown is empty/invalid
+            const team = teams.find(t => t.id === parseInt(teamId));
+            const validStatuses = ['available', 'en_route', 'on_scene', 'busy', 'offline'];
+            if (!status || !validStatuses.includes(status)) {
+                status = (team && validStatuses.includes(team.status)) ? team.status : 'available';
             }
             
             showLoading(true);
@@ -1658,42 +4052,36 @@
                     status: status,
                     color: color,
                     icon: icon,
-                    gps_enabled: gpsEnabled
+                    gps_enabled: gpsEnabled,
+                    branch_id: parseInt(branchId) || team?.branch_id || currentUser.branch_id
                 };
                 if (teamNumber) {
                     payload.team_number = parseInt(teamNumber);
                 }
-                const response = await fetch(`/api/teams/${teamId}`, {
-                    method: 'PATCH',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(payload)
-                });
+                const result = await apiPatch(`/api/teams/${teamId}`, payload);
                 
-                if (response.ok) {
+                if (result) {
                     await loadData();
                 }
             } catch (error) {
                 console.error('Error updating team:', error);
+                alert('Failed to update team: ' + error.message);
             }
             
             showLoading(false);
         }
         
         async function deleteTeam(teamId) {
-            if (!confirm('Are you sure you want to delete this team?')) {
+            if (!confirm(t('delete_team_confirm'))) {
                 return;
             }
             
             showLoading(true);
             
             try {
-                const response = await fetch(`/api/teams/${teamId}`, {
-                    method: 'DELETE'
-                });
+                const success = await apiDelete(`/api/teams/${teamId}`);
                 
-                if (response.ok) {
+                if (success) {
                     await loadData();
                 }
             } catch (error) {
@@ -1721,6 +4109,154 @@
             document.getElementById('point-custom-type').value = '';
             document.getElementById('custom-type-label').style.display = 'none';
             document.getElementById('point-custom-type').style.display = 'none';
+        }
+        
+        // Road block functions
+        function toggleRoadBlockMode() {
+            roadBlockCreationMode = !roadBlockCreationMode;
+            const btn = document.getElementById('road-block-btn');
+            
+            if (roadBlockCreationMode) {
+                btn.classList.add('active');
+                btn.textContent = '🚧 Click Map to Add Block';
+                // Don't open modal yet - wait for map click
+            } else {
+                btn.classList.remove('active');
+                btn.textContent = '🚧 Add Road Block';
+                closeRoadBlockModal();
+            }
+        }
+        
+        function openRoadBlockModal(lat, lng) {
+            if (lat && lng) {
+                document.getElementById('road-block-lat').value = lat;
+                document.getElementById('road-block-lng').value = lng;
+            }
+            document.getElementById('road-block-modal').classList.add('active');
+            document.getElementById('modal-overlay').classList.add('active');
+        }
+        
+        function closeRoadBlockModal() {
+            document.getElementById('road-block-modal').classList.remove('active');
+            document.getElementById('modal-overlay').classList.remove('active');
+            document.getElementById('road-block-reason').value = '';
+            document.getElementById('road-block-radius').value = '200';
+            document.getElementById('road-block-severity').value = '3';
+            document.getElementById('road-block-expires').value = '';
+            roadBlockCreationMode = false;
+            const btn = document.getElementById('road-block-btn');
+            btn.classList.remove('active');
+            btn.textContent = '🚧 Add Road Block';
+        }
+        
+        async function createRoadBlock() {
+            const lat = parseFloat(document.getElementById('road-block-lat').value);
+            const lng = parseFloat(document.getElementById('road-block-lng').value);
+            const status = document.getElementById('road-block-status').value;
+            const reason = document.getElementById('road-block-reason').value;
+            const radius = parseInt(document.getElementById('road-block-radius').value);
+            const severity = parseInt(document.getElementById('road-block-severity').value);
+            const expiresAt = document.getElementById('road-block-expires').value;
+            
+            if (!lat || !lng) {
+                alert('Please click on the map to set the road block location');
+                return;
+            }
+            
+            const payload = {
+                lat: lat,
+                lng: lng,
+                status: status,
+                reason: reason,
+                radius: radius,
+                severity: severity
+            };
+            
+            if (expiresAt) {
+                payload.expires_at = expiresAt;
+            }
+            
+            try {
+                await apiPost('/api/road-blocks', payload);
+                closeRoadBlockModal();
+                loadData(); // Reload to show new block
+            } catch (error) {
+                alert('Error creating road block: ' + error.message);
+            }
+        }
+        
+        async function deleteRoadBlock(blockId) {
+            if (!confirm('Are you sure you want to delete this road block?')) {
+                return;
+            }
+            
+            try {
+                await apiDelete(`/api/road-blocks/${blockId}`);
+                loadData(); // Reload to remove block
+            } catch (error) {
+                alert('Error deleting road block: ' + error.message);
+            }
+        }
+        
+        function togglePlanningMode() {
+            planningMode = !planningMode;
+            const btn = document.getElementById('planning-mode-btn');
+            
+            if (planningMode) {
+                btn.classList.add('active');
+                btn.textContent = '🧠 Planning: ON';
+                btn.style.background = '#9b59b6';
+            } else {
+                btn.classList.remove('active');
+                btn.textContent = '🧠 Planning Mode';
+                btn.style.background = '';
+            }
+        }
+        
+        // Route avoidance function - check if route intersects any road blocks
+        function isRouteBlocked(routePath) {
+            if (!roadBlocks || roadBlocks.length === 0) {
+                return false;
+            }
+            
+            // Check each point in the route path
+            for (const point of routePath) {
+                const routeLat = point[0]; // [lat, lng]
+                const routeLng = point[1];
+                
+                // Check against each road block
+                for (const block of roadBlocks) {
+                    // Only consider closed or restricted blocks
+                    if (block.status === 'open') {
+                        continue;
+                    }
+                    
+                    // Calculate distance between route point and block center
+                    const distance = getDistanceFromLatLonInMeters(
+                        routeLat, routeLng,
+                        block.lat, block.lng
+                    );
+                    
+                    // If route point is within block radius, route is blocked
+                    if (distance <= block.radius) {
+                        return true;
+                    }
+                }
+            }
+            
+            return false;
+        }
+        
+        // Haversine formula to calculate distance between two lat/lng points in meters
+        function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
+            const R = 6371000; // Earth radius in meters
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
         }
         
         function toggleCustomType() {
@@ -1772,20 +4308,14 @@
             closePointModal();
             
             try {
-                const response = await fetch('/api/points', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        name: name,
-                        type: finalType,
-                        lat: lat,
-                        lng: lng
-                    })
+                const result = await apiPost('/api/points', {
+                    name: name,
+                    type: finalType,
+                    lat: lat,
+                    lng: lng
                 });
                 
-                if (response.ok) {
+                if (result) {
                     await loadData();
                 }
             } catch (error) {
@@ -1866,18 +4396,16 @@
         }
         
         async function deletePoint(pointId) {
-            if (!confirm('Are you sure you want to delete this point?')) {
+            if (!confirm(t('delete_point_confirm'))) {
                 return;
             }
             
             showLoading(true);
             
             try {
-                const response = await fetch(`/api/points/${pointId}`, {
-                    method: 'DELETE'
-                });
+                const success = await apiDelete(`/api/points/${pointId}`);
                 
-                if (response.ok) {
+                if (success) {
                     await loadData();
                 }
             } catch (error) {
@@ -1909,9 +4437,9 @@
                 
                 item.innerHTML = `
                     <h4>${incident.type}</h4>
-                    <p>Status: ${incident.status}</p>
+                    <p>${t('status')}: ${incident.status}</p>
                     <div class="meta">
-                        <span class="severity-badge ${severityClass}">Severity: ${incident.severity}</span>
+                        <span class="severity-badge ${severityClass}">${t('severity')}: ${incident.severity}</span>
                     </div>
                 `;
                 
@@ -1934,17 +4462,34 @@
                     }
                 };
                 
+                // Status badge color
+                const statusColor = {
+                    'available': '#27ae60',
+                    'en_route': '#f39c12',
+                    'on_scene': '#e67e22',
+                    'busy': '#e74c3c',
+                    'offline': '#7f8c8d'
+                }[team.current_status] || '#3498db';
+                
                 content.innerHTML = `
                     <h4>${team.team_number ? '#' + team.team_number + ' - ' : ''}${team.name}</h4>
-                    <p>Status: ${team.status}</p>
+                    <p>
+                        <span style="display: inline-block; background: ${statusColor}; color: white; padding: 2px 8px; border-radius: 3px; font-size: 11px; margin-right: 5px;">
+                            ${team.current_status || team.status}
+                        </span>
+                        <span style="font-size: 12px; color: #666;">
+                            ${team.active_incidents !== undefined ? `| ${t('active')}: ${team.active_incidents}` : ''}
+                        </span>
+                    </p>
                     <div class="meta">${team.lat.toFixed(4)}, ${team.lng.toFixed(4)}</div>
                 `;
                 
                 const actions = document.createElement('div');
                 actions.className = 'list-item-actions';
                 actions.innerHTML = `
-                    <button onclick="event.stopPropagation(); openTeamEditModal(${team.id})" style="padding: 4px 8px; font-size: 11px; margin-right: 5px;">Edit</button>
-                    <button onclick="event.stopPropagation(); deleteTeam(${team.id})" style="padding: 4px 8px; font-size: 11px; background: #e74c3c;">Delete</button>
+                    <button onclick="event.stopPropagation(); openTeamReportModal(${team.id}, ${selectedIncident ? selectedIncident.id : 'null'})" style="padding: 4px 8px; font-size: 11px; margin-right: 5px; background: #9b59b6;">📡 Report</button>
+                    <button onclick="event.stopPropagation(); openTeamEditModal(${team.id})" style="padding: 4px 8px; font-size: 11px; margin-right: 5px;">${t('edit')}</button>
+                    <button onclick="event.stopPropagation(); deleteTeam(${team.id})" style="padding: 4px 8px; font-size: 11px; background: #e74c3c;">${t('delete')}</button>
                 `;
                 
                 item.appendChild(content);
@@ -1970,21 +4515,83 @@
                 
                 content.innerHTML = `
                     <h4>${point.name}</h4>
-                    <p>Type: ${point.type}</p>
+                    <p>${t('type')}: ${point.type}</p>
                     <div class="meta">${point.lat.toFixed(4)}, ${point.lng.toFixed(4)}</div>
                 `;
                 
                 const actions = document.createElement('div');
                 actions.className = 'list-item-actions';
                 actions.innerHTML = `
-                    <button onclick="event.stopPropagation(); openPointEditModal(${point.id})" style="padding: 4px 8px; font-size: 11px; margin-right: 5px;">Edit</button>
-                    <button onclick="event.stopPropagation(); deletePoint(${point.id})" style="padding: 4px 8px; font-size: 11px; background: #e74c3c;">Delete</button>
+                    <button onclick="event.stopPropagation(); openPointEditModal(${point.id})" style="padding: 4px 8px; font-size: 11px; margin-right: 5px;">${t('edit')}</button>
+                    <button onclick="event.stopPropagation(); deletePoint(${point.id})" style="padding: 4px 8px; font-size: 11px; background: #e74c3c;">${t('delete')}</button>
                 `;
                 
                 item.appendChild(content);
                 item.appendChild(actions);
                 pointsList.appendChild(item);
             });
+            
+            // Update road blocks list
+            const roadBlocksList = document.getElementById('road-blocks-list');
+            roadBlocksList.innerHTML = '';
+            
+            roadBlocks.forEach(block => {
+                const item = document.createElement('div');
+                item.className = 'list-item';
+                
+                let statusColor, statusLabel;
+                switch (block.status) {
+                    case 'closed':
+                        statusColor = '#e74c3c';
+                        statusLabel = 'Closed';
+                        break;
+                    case 'restricted':
+                        statusColor = '#f39c12';
+                        statusLabel = 'Restricted';
+                        break;
+                    case 'open':
+                        statusColor = '#27ae60';
+                        statusLabel = 'Open';
+                        break;
+                    default:
+                        statusColor = '#95a5a6';
+                        statusLabel = block.status;
+                }
+                
+                const content = document.createElement('div');
+                content.onclick = () => {
+                    const marker = roadBlockMarkers[block.id];
+                    if (marker) {
+                        map.panTo([block.lat, block.lng]);
+                        marker.openPopup();
+                    }
+                };
+                
+                content.innerHTML = `
+                    <h4>🚧 ${statusLabel}</h4>
+                    <p>${block.reason || 'No reason'}</p>
+                    <div class="meta">
+                        <span style="display: inline-block; background: ${statusColor}; color: white; padding: 2px 8px; border-radius: 3px; font-size: 11px; margin-right: 5px;">
+                            ${block.radius || 200}m
+                        </span>
+                        <span style="font-size: 12px; color: #666;">
+                            ${block.lat.toFixed(4)}, ${block.lng.toFixed(4)}
+                        </span>
+                    </div>
+                `;
+                
+                const actions = document.createElement('div');
+                actions.className = 'list-item-actions';
+                actions.innerHTML = `
+                    <button onclick="event.stopPropagation(); deleteRoadBlock(${block.id})" style="padding: 4px 8px; font-size: 11px; background: #e74c3c;">Delete</button>
+                `;
+                
+                item.appendChild(content);
+                item.appendChild(actions);
+                roadBlocksList.appendChild(item);
+            });
+            
+            applyTranslations();
         }
         
         // Update reports
@@ -1994,35 +4601,35 @@
                 <div class="report-stats">
                     <div class="report-stat">
                         <div class="value">${reports.total_incidents}</div>
-                        <div class="label">Total Incidents</div>
+                        <div class="label" data-i18n="total_incidents">${t('total_incidents')}</div>
                     </div>
                     <div class="report-stat">
                         <div class="value">${reports.active_incidents}</div>
-                        <div class="label">Active</div>
+                        <div class="label" data-i18n="active">${t('active')}</div>
                     </div>
                     <div class="report-stat">
                         <div class="value">${reports.assigned_incidents}</div>
-                        <div class="label">Assigned</div>
+                        <div class="label" data-i18n="assigned">${t('assigned')}</div>
                     </div>
                     <div class="report-stat">
                         <div class="value">${reports.resolved_incidents}</div>
-                        <div class="label">Resolved</div>
+                        <div class="label" data-i18n="resolved">${t('resolved')}</div>
                     </div>
                     <div class="report-stat">
                         <div class="value">${reports.total_teams}</div>
-                        <div class="label">Total Teams</div>
+                        <div class="label" data-i18n="total_teams">${t('total_teams')}</div>
                     </div>
                     <div class="report-stat">
                         <div class="value">${reports.available_teams}</div>
-                        <div class="label">Available</div>
+                        <div class="label" data-i18n="available">${t('available')}</div>
                     </div>
                     <div class="report-stat">
-                        <div class="value">${reports.deployed_teams}</div>
-                        <div class="label">Deployed</div>
+                        <div class="value">${reports.active_teams}</div>
+                        <div class="label" data-i18n="active">${t('active')}</div>
                     </div>
                     <div class="report-stat">
                         <div class="value">${reports.total_points}</div>
-                        <div class="label">Points</div>
+                        <div class="label" data-i18n="points">${t('points')}</div>
                     </div>
                 </div>
             `;
@@ -2050,9 +4657,7 @@
             
             try {
                 for (const route of routes) {
-                    await fetch(`/api/routes/${route.id}`, {
-                        method: 'DELETE'
-                    });
+                    await apiDelete(`/api/routes/${route.id}`);
                 }
                 
                 await loadData();
@@ -2086,9 +4691,88 @@
             }
         }, 5000);
         
+        // ==================== EVENT NOTIFICATIONS ====================
+        
+        let lastEventTimestamp = null;
+        
+        async function checkEvents() {
+            try {
+                const response = await apiGet('/api/events');
+                if (!response) return;
+                
+                const newEvents = response || [];
+                
+                // Filter events newer than last check
+                const recentEvents = lastEventTimestamp 
+                    ? newEvents.filter(e => e.timestamp > lastEventTimestamp)
+                    : newEvents;
+                
+                // Show notifications for new events
+                recentEvents.forEach(event => {
+                    if (event.type === 'incident_new') {
+                        showNotification('🚨 ' + t('new_incident'));
+                    } else if (event.type === 'team_enter') {
+                        showNotification('🚗 ' + t('team_enter'));
+                    }
+                });
+                
+                // Update last timestamp
+                if (newEvents.length > 0) {
+                    lastEventTimestamp = newEvents[newEvents.length - 1].timestamp;
+                }
+            } catch (error) {
+                console.error('Error checking events:', error);
+            }
+        }
+        
+        function showNotification(message) {
+            // Create toast notification
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #e94560;
+                color: white;
+                padding: 12px 20px;
+                border-radius: 8px;
+                font-weight: 600;
+                z-index: 10002;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                animation: slideIn 0.3s ease-out;
+            `;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            // Remove after 5 seconds
+            setTimeout(() => {
+                toast.style.animation = 'slideOut 0.3s ease-out';
+                setTimeout(() => toast.remove(), 300);
+            }, 5000);
+        }
+        
+        // Add animation styles
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+        
+        // Poll for events every 5 seconds
+        setInterval(checkEvents, 5000);
+        
         // Initialize on load
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             initMap();
+            applyTranslations(); // Apply translations on load
+            await loadUserInfo(); // Load user info first
             loadData();
         });
     </script>
