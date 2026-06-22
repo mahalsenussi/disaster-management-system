@@ -7,6 +7,11 @@ REMOTE_HOST="10.1.30.100"
 REMOTE_USER="mahmoud"
 REMOTE_DIR="/home/mahmoud/disaster_management"
 
+# Fallback to VPN address if direct LAN is unreachable
+if ! ping -c 1 -W 2 "$REMOTE_HOST" >/dev/null 2>&1; then
+    REMOTE_HOST="10.147.18.194"
+fi
+
 echo "=== Disaster Management System - Remote Sync ==="
 echo "Local: /home/mahmoud/v2"
 echo "Remote: $REMOTE_USER@$REMOTE_HOST:$REMOTE_DIR"
@@ -33,9 +38,9 @@ echo "Step 2: Creating tarball of local project..."
 tar -czf /tmp/disaster_management_sync.tar.gz \
     --exclude='.git' \
     --exclude='basic_flutter' \
+    --exclude='field_app/build' \
     --exclude='__pycache__' \
     --exclude='*.pyc' \
-    --exclude='database/*.db' \
     --exclude='.DS_Store' \
     --exclude='*.log' \
     --exclude='sync_to_remote.sh' \
@@ -65,11 +70,11 @@ echo ""
 echo "Step 4: Extracting and updating on remote server..."
 ssh $REMOTE_USER@$REMOTE_HOST << 'ENDSSH'
 cd /home/mahmoud
-# Remove old deployment
+# Remove old deployment (including remote database - local DB will replace it)
 rm -rf disaster_management
 # Create new directory
 mkdir -p disaster_management
-# Extract new deployment
+# Extract new deployment (includes local database)
 tar -xzf /tmp/disaster_management_sync.tar.gz
 # Move files to correct location
 mv v2/* disaster_management/
@@ -80,11 +85,17 @@ ENDSSH
 
 echo ""
 
-# Step 5: Update Engine Service port configuration (maintain port 5002)
-echo "Step 5: Maintaining port configuration..."
-ssh $REMOTE_USER@$REMOTE_HOST "sed -i 's/port=5001/port=5002/g' $REMOTE_DIR/engine_service/app.py"
-ssh $REMOTE_USER@$REMOTE_HOST "sed -i \"s|'http://localhost:5001/route'|'http://localhost:5002/route'|g\" $REMOTE_DIR/public_app/app.py"
-echo "✓ Port configuration maintained (Engine on 5002)"
+# Step 5: Port configuration already correct in local files
+echo "Step 5: Port configuration check..."
+echo "✓ Using local port configuration (Engine on 5002, OSRM on 5003)"
+echo ""
+
+# Step 5.5: Update systemd service file port configuration
+echo "Step 5.5: Updating systemd service configuration..."
+ssh $REMOTE_USER@$REMOTE_HOST "sed -i 's|ENGINE_API_URL=http://localhost:5001/route|ENGINE_API_URL=http://localhost:5002/route|g' /home/mahmoud/.config/systemd/user/disaster-public-app.service"
+ssh $REMOTE_USER@$REMOTE_HOST "sed -i 's|ENGINE_API_URL=http://localhost:5004/route|ENGINE_API_URL=http://localhost:5002/route|g' /home/mahmoud/.config/systemd/user/disaster-public-app.service"
+ssh $REMOTE_USER@$REMOTE_HOST "systemctl --user daemon-reload"
+echo "✓ Systemd service configuration updated"
 echo ""
 
 # Step 6: Install/update Python dependencies
@@ -92,6 +103,54 @@ echo "Step 6: Updating Python dependencies..."
 ssh $REMOTE_USER@$REMOTE_HOST "cd $REMOTE_DIR && pip3 install -r public_app/requirements.txt -q"
 ssh $REMOTE_USER@$REMOTE_HOST "cd $REMOTE_DIR && pip3 install -r engine_service/requirements.txt -q"
 echo "✓ Dependencies updated"
+echo ""
+
+# Step 6.5: Migrate database schema
+echo "Step 6.5: Migrating database schema..."
+ssh $REMOTE_USER@$REMOTE_HOST << 'ENDSSH'
+python3 << 'PYEOF'
+import sqlite3
+conn = sqlite3.connect('/home/mahmoud/disaster_management/public_app/database/disaster_ops.db')
+cursor = conn.cursor()
+
+# Add team_number column to teams table
+try:
+    cursor.execute('ALTER TABLE teams ADD COLUMN team_number INTEGER UNIQUE')
+    print('Added team_number column')
+except Exception as e:
+    if 'duplicate column' not in str(e):
+        print(f'team_number error: {e}')
+
+# Add battery_level column
+try:
+    cursor.execute('ALTER TABLE teams ADD COLUMN battery_level INTEGER DEFAULT 100')
+    print('Added battery_level column')
+except Exception as e:
+    if 'duplicate column' not in str(e):
+        print(f'battery_level error: {e}')
+
+# Add speed column
+try:
+    cursor.execute('ALTER TABLE teams ADD COLUMN speed REAL DEFAULT 0.0')
+    print('Added speed column')
+except Exception as e:
+    if 'duplicate column' not in str(e):
+        print(f'speed error: {e}')
+
+# Add heading column
+try:
+    cursor.execute('ALTER TABLE teams ADD COLUMN heading REAL DEFAULT 0.0')
+    print('Added heading column')
+except Exception as e:
+    if 'duplicate column' not in str(e):
+        print(f'heading error: {e}')
+
+conn.commit()
+conn.close()
+print('Database migration complete')
+PYEOF
+ENDSSH
+echo "✓ Database migrated"
 echo ""
 
 # Step 7: Restart Public App (systemd)

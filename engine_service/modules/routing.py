@@ -51,7 +51,8 @@ class RouteManager:
     
     def calculate_route(self, start: Tuple[float, float], 
                        end: Tuple[float, float],
-                       use_osrm: bool = True) -> Dict[str, Any]:
+                       use_osrm: bool = True,
+                       alternatives: bool = False) -> Dict[str, Any]:
         """
         Calculate route between two points.
         
@@ -59,6 +60,7 @@ class RouteManager:
             start: Starting coordinates (lat, lng)
             end: Ending coordinates (lat, lng)
             use_osrm: Try OSRM first, fallback to straight-line
+            alternatives: Request alternative routes from OSRM
         
         Returns:
             {
@@ -71,8 +73,8 @@ class RouteManager:
         # Try OSRM first if enabled and available
         if use_osrm and self.osrm_available:
             try:
-                logger.info(f"Calculating OSRM route from {start} to {end}")
-                route_data = self.osrm_service.get_route_osrm(start, end)
+                logger.info(f"Calculating OSRM route from {start} to {end} (alternatives={alternatives})")
+                route_data = self.osrm_service.get_route_osrm(start, end, alternatives=alternatives)
                 route_data['source'] = 'osrm'
                 return route_data
             except Exception as e:

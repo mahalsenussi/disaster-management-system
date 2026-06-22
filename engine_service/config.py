@@ -11,9 +11,10 @@ class Config:
     # Flask Configuration
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'disaster-engine-secret-key-2026'
     DEBUG = False
+    PORT = int(os.environ.get('PORT') or os.environ.get('ENGINE_PORT') or '5002')
     
     # OSRM Configuration
-    OSRM_URL = os.environ.get('OSRM_URL') or 'http://localhost:5000'
+    OSRM_URL = os.environ.get('OSRM_URL') or 'http://localhost:5003'
     OSRM_PROFILE = 'driving'  # Options: driving, walking, cycling
     OSRM_TIMEOUT = int(os.environ.get('OSRM_TIMEOUT', '30'))  # seconds
     OSRM_ALTERNATIVES = False  # For disaster response, use primary route
