@@ -7,6 +7,15 @@ REMOTE_HOST="10.1.30.100"
 REMOTE_USER="mahmoud"
 REMOTE_DIR="/home/mahmoud/disaster_management"
 
+# Load API keys from .env (gitignored). Create it from .env.example.
+if [ -f "$(dirname "$0")/.env" ]; then
+    set -a
+    source "$(dirname "$0")/.env"
+    set +a
+else
+    echo "WARNING: .env not found. Copy .env.example to .env and fill in your API keys."
+fi
+
 # Fallback to VPN address if direct LAN is unreachable
 if ! ping -c 1 -W 2 "$REMOTE_HOST" >/dev/null 2>&1; then
     REMOTE_HOST="10.147.18.194"
@@ -35,6 +44,7 @@ echo ""
 
 # Step 2: Create tarball of local project
 echo "Step 2: Creating tarball of local project..."
+# NOTE: Temporarily including evaluation_service for server testing
 tar -czf /tmp/disaster_management_sync.tar.gz \
     --exclude='.git' \
     --exclude='basic_flutter' \
@@ -102,6 +112,7 @@ echo ""
 echo "Step 6: Updating Python dependencies..."
 ssh $REMOTE_USER@$REMOTE_HOST "cd $REMOTE_DIR && pip3 install -r public_app/requirements.txt -q"
 ssh $REMOTE_USER@$REMOTE_HOST "cd $REMOTE_DIR && pip3 install -r engine_service/requirements.txt -q"
+ssh $REMOTE_USER@$REMOTE_HOST "cd $REMOTE_DIR && pip3 install flask flask-cors requests schedule -q"
 echo "✓ Dependencies updated"
 echo ""
 
@@ -163,7 +174,7 @@ echo ""
 echo "Step 8: Restarting Engine Service..."
 ssh $REMOTE_USER@$REMOTE_HOST << 'ENDSSH'
 # Kill existing engine service
-pkill -f "engine_service/app.py"
+pkill -f "[e]ngine_service/app.py"
 # Wait a moment
 sleep 2
 # Start engine service
@@ -172,6 +183,40 @@ nohup python3 app.py > /tmp/engine_service.log 2>&1 &
 echo "✓ Engine Service restarted"
 ENDSSH
 
+echo ""
+
+# Step 8.5: Start Evaluation Service
+echo "Step 8.5: Starting Evaluation Service..."
+ssh $REMOTE_USER@$REMOTE_HOST << ENDSSH
+# Kill existing evaluation service
+pkill -f "[e]valuation_service/app.py"
+# Wait a moment
+sleep 2
+# Start evaluation service with API keys (values injected from local .env)
+cd /home/mahmoud/disaster_management/evaluation_service
+export OPENWEATHER_API_KEY=$OPENWEATHER_API_KEY
+export NEWSAPI_KEY=$NEWSAPI_KEY
+export GNEWS_API_KEY=$GNEWS_API_KEY
+export WORLDNEWS_API_KEY=$WORLDNEWS_API_KEY
+export CURRENTS_API_KEY=$CURRENTS_API_KEY
+export COPERNICUS_USERNAME=$COPERNICUS_USERNAME
+export COPERNICUS_PASSWORD=$COPERNICUS_PASSWORD
+nohup python3 app.py > /tmp/evaluation_service.log 2>&1 &
+echo "✓ Evaluation Service started"
+ENDSSH
+
+echo ""
+
+# Step 8.6: Sync evaluation service templates
+echo "Step 8.6: Syncing evaluation service templates..."
+scp -o StrictHostKeyChecking=no /home/mahmoud/v2/evaluation_service/templates/dashboard.html $REMOTE_USER@$REMOTE_HOST:/home/mahmoud/disaster_management/evaluation_service/templates/
+echo "✓ Templates synced"
+echo ""
+
+# Step 8.7: Verify evaluation service API keys reached the process
+echo "Step 8.7: Verifying evaluation service API keys..."
+ssh $REMOTE_USER@$REMOTE_HOST 'PID=$(pgrep -f "[e]valuation_service/app.py" | head -1); echo "Evaluation PID: $PID"; if [ -n "$PID" ]; then tr "\0" "\n" < /proc/$PID/environ | grep -E "NEWSAPI_KEY|GNEWS|WORLDNEWS|CURRENTS" || echo "ERROR: News API keys NOT set in evaluation service process"; else echo "ERROR: Evaluation service not running"; fi'
+echo "✓ API key verification complete"
 echo ""
 
 # Step 9: Wait for services to start
@@ -191,7 +236,7 @@ ssh $REMOTE_USER@$REMOTE_HOST "ps aux | grep 'engine_service/app.py' | grep -v g
 
 echo ""
 echo "Port status:"
-ssh $REMOTE_USER@$REMOTE_HOST "netstat -tlnp 2>/dev/null | grep -E ':(5000|5002)' || ss -tlnp 2>/dev/null | grep -E ':(5000|5002)'"
+ssh $REMOTE_USER@$REMOTE_HOST "netstat -tlnp 2>/dev/null | grep -E ':(5000|5002|5006)' || ss -tlnp 2>/dev/null | grep -E ':(5000|5002|5006)'"
 
 echo ""
 
@@ -205,5 +250,6 @@ echo ""
 echo "Access URLs:"
 echo "• Public Dashboard: http://$REMOTE_HOST:5000"
 echo "• Engine Service: http://$REMOTE_HOST:5002"
+echo "• Evaluation Service: http://$REMOTE_HOST:5006"
 echo ""
 echo "Backup created on remote server in: /home/mahmoud/disaster_management_backup_*"

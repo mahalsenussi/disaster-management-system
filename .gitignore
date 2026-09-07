@@ -61,3 +61,14 @@ Thumbs.db
 
 # Node (if any)
 node_modules/
+
+# Gradle build artifacts
+.gradle/
+field_app/android/.gradle/
+
+# Local secrets / credentials (do NOT push)
+newsapi.txt
+lrcserver.md
+
+# Local secrets (never commit)
+.env
