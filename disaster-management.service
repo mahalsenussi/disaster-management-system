@@ -1,0 +1,24 @@
+[Unit]
+Description=Disaster Management System (Operations + Evaluation)
+After=network.target
+
+[Service]
+Type=forking
+WorkingDirectory=/home/mahmoud/v2
+ExecStart=/home/mahmoud/v2/start_all.sh
+Restart=always
+RestartSec=10
+User=mahmoud
+Group=mahmoud
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=disaster-management
+
+# Security
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

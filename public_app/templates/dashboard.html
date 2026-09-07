@@ -1080,6 +1080,137 @@
             background: #333;
             color: #fff;
         }
+
+        /* Meetings Modal */
+        .meetings-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 3500;
+            display: none;
+        }
+
+        .meetings-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+            z-index: 4000;
+            width: 90%;
+            max-width: 720px;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 25px;
+            display: none;
+        }
+
+        .meetings-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .meetings-modal-header h3 {
+            margin: 0;
+            color: #1a1a2e;
+            font-size: 18px;
+        }
+
+        .meetings-close-btn {
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 28px;
+            cursor: pointer;
+            padding: 0;
+            width: 34px;
+            height: 34px;
+            line-height: 34px;
+        }
+
+        .meetings-close-btn:hover {
+            color: #e94560;
+        }
+
+        .meetings-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        @media (max-width: 560px) {
+            .meetings-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .meeting-card {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 18px;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            background: #fafafa;
+        }
+
+        .meeting-icon {
+            font-size: 28px;
+        }
+
+        .meeting-card h4 {
+            margin: 0;
+            color: #1a1a2e;
+            font-size: 15px;
+        }
+
+        .meeting-card p {
+            margin: 0;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .meeting-card input {
+            padding: 9px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+
+        .meeting-btn {
+            padding: 10px 14px;
+            border: none;
+            border-radius: 6px;
+            background: #1a1a2e;
+            color: #fff;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .meeting-btn:hover {
+            background: #e94560;
+        }
+
+        .meeting-btn.secondary {
+            background: #fff;
+            color: #1a1a2e;
+            border: 1px solid #ddd;
+        }
+
+        .meeting-btn.secondary:hover {
+            background: #f0f0f0;
+        }
     </style>
 </head>
 <body>
@@ -1243,6 +1374,8 @@
         </div>
         
         <button class="logout-btn" onclick="toggleLang()" style="margin-right: 10px;">🌐</button>
+        <button class="logout-btn" onclick="openMeetingsModal()" style="margin-right: 10px;">🎥 Meetings</button>
+        <button class="logout-btn" onclick="window.open('https://ev.onlineacademy.com.ly/', '_blank')" style="margin-right: 10px;">🧠 Intelligence & Danger</button>
         <button class="logout-btn" onclick="logout()" data-i18n="logout">Logout</button>
     </div>
     
@@ -1277,6 +1410,43 @@
     
     <!-- Modal Overlay -->
     <div class="modal-overlay" id="modal-overlay"></div>
+    
+    <!-- Meetings Modal -->
+    <div class="meetings-modal-overlay" id="meetings-modal-overlay" onclick="closeMeetingsModal()"></div>
+    <div class="meetings-modal" id="meetings-modal">
+        <div class="meetings-modal-header">
+            <h3>🎥 Meetings & Collaboration</h3>
+            <button class="meetings-close-btn" onclick="closeMeetingsModal()">×</button>
+        </div>
+        <div class="meetings-grid">
+            <div class="meeting-card">
+                <div class="meeting-icon">📹</div>
+                <h4>Jitsi Meet</h4>
+                <p>Instant video conference room on LRC servers.</p>
+                <input type="text" id="jitsi-room" placeholder="Room name (e.g. operations-01)" value="lrc-ops">
+                <button class="meeting-btn" onclick="joinJitsi()">Join Jitsi Room</button>
+            </div>
+            <div class="meeting-card">
+                <div class="meeting-icon">🎤</div>
+                <h4>BigBlueButton</h4>
+                <p>Web conference with presentations and breakout rooms.</p>
+                <button class="meeting-btn" onclick="window.open('https://bbb.onlineacademy.com.ly/', '_blank')">Open BigBlueButton</button>
+            </div>
+            <div class="meeting-card">
+                <div class="meeting-icon">☁️</div>
+                <h4>Nextcloud Talk</h4>
+                <p>Team chat, file sharing and calls via the LRC cloud.</p>
+                <button class="meeting-btn" onclick="window.open('https://nc.onlineacademy.com.ly/', '_blank')">Open Nextcloud</button>
+                <button class="meeting-btn secondary" onclick="window.open('https://nc.onlineacademy.com.ly/apps/spreed/', '_blank')">Open Talk App</button>
+            </div>
+            <div class="meeting-card">
+                <div class="meeting-icon">📄</div>
+                <h4>ONLYOFFICE Docs</h4>
+                <p>Collaborative documents, spreadsheets and presentations.</p>
+                <button class="meeting-btn" onclick="window.open('https://office.onlineacademy.com.ly/', '_blank')">Open ONLYOFFICE</button>
+            </div>
+        </div>
+    </div>
     
     <!-- Incident Creation Modal -->
     <div class="incident-modal" id="incident-modal">
@@ -1736,6 +1906,28 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     
     <script>
+        // Meetings modal helpers (LRC hosted services)
+        function openMeetingsModal() {
+            // Default the Jitsi room to the currently selected incident, if any
+            const roomInput = document.getElementById('jitsi-room');
+            if (selectedIncident && selectedIncident.id) {
+                roomInput.value = `incident-${selectedIncident.id}`;
+            }
+            document.getElementById('meetings-modal').style.display = 'block';
+            document.getElementById('meetings-modal-overlay').style.display = 'block';
+        }
+
+        function closeMeetingsModal() {
+            document.getElementById('meetings-modal').style.display = 'none';
+            document.getElementById('meetings-modal-overlay').style.display = 'none';
+        }
+
+        function joinJitsi() {
+            let room = (document.getElementById('jitsi-room').value || 'lrc-ops').trim();
+            room = room.replace(/[^a-zA-Z0-9-_]/g, '-') || 'lrc-ops';
+            window.open(`https://jitsi.onlineacademy.com.ly/${room}`, '_blank');
+        }
+
         // Global variables
         let map;
         let incidents = [];
