@@ -72,3 +72,6 @@ lrcserver.md
 
 # Local secrets (never commit)
 .env
+
+# Provisioning (contains default credentials)
+lrc_branch_seed.py
