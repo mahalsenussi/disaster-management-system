@@ -458,6 +458,20 @@ def create_incident():
         data = enforce_branch_on_write(data)
         system_logger.info(f"After enforce_branch_on_write: branch_id={data.get('branch_id')}")
         
+        # Operators are geofenced to their branch operational area (radius_km, default 10)
+        if g.user.get('role') == 'operator':
+            conn = get_db()
+            branch = conn.execute(
+                'SELECT id, name, lat, lng, radius_km FROM branches WHERE id = ?',
+                (data.get('branch_id'),)
+            ).fetchone()
+            conn.close()
+            if branch and not is_in_branch_area(data.get('lat'), data.get('lng'), dict(branch)):
+                radius_km = branch['radius_km'] or 10
+                return jsonify({
+                    'error': f'Incident is outside your branch operational area ({int(radius_km)} km radius)'
+                }), 403
+        
         conn = get_db()
         cursor = conn.cursor()
         cursor.execute('''
