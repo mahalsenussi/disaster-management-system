@@ -1263,6 +1263,45 @@ def health_check():
         'version': '1.0.0'
     }), 200
 
+def start_scheduler():
+    """Start background scheduler for periodic news/weather/coastal collection.
+
+    Keeps live data fresh for the operations dashboard. Jobs are staggered
+    to respect third-party API rate limits. Never crashes the service.
+    """
+    try:
+        from evaluation_service.scheduler.master_scheduler import get_scheduler
+        scheduler = get_scheduler()
+
+        news_categories = ['comprehensive', 'libya-danger-assessment', 'libya_cities',
+                           'humanitarian', 'disasters', 'mediterranean', 'north_africa', 'lrc_operations']
+        weather_cities = ['Tripoli', 'Benghazi', 'Misrata', 'Sabha', 'Bayda',
+                          'Ghadames', 'Tobruk', 'Zawiya']
+        coastal_locations = ['Tripoli', 'Benghazi', 'Misrata', 'Derna',
+                             'Sirte', 'Tobruk', 'Zawiya', 'Al Khums']
+
+        # Stagger jobs 2 minutes apart within each hour to avoid rate limits
+        offset = 0
+        for cat in news_categories:
+            scheduler.add_job(f'news_{cat}', lambda c=cat: news_collector.collect_and_save(c),
+                              interval_minutes=60, at_time=f'00:{offset:02d}')
+            offset += 2
+        for city in weather_cities:
+            scheduler.add_job(f'weather_{city}', lambda c=city: weather_collector.collect_and_save(c),
+                              interval_minutes=60, at_time=f'00:{offset:02d}')
+            offset += 2
+        for loc in coastal_locations:
+            scheduler.add_job(f'coastal_{loc}', lambda l=loc: coastal_collector.collect_and_save(l),
+                              interval_minutes=60, at_time=f'00:{offset:02d}')
+            offset += 2
+
+        scheduler.start()
+        logger.info(f"Scheduler started with {len(scheduler.get_jobs())} jobs", module='MAIN')
+    except Exception as e:
+        logger.error(f"Failed to start scheduler: {e}", module='MAIN', exc_info=True)
+
+
 if __name__ == '__main__':
     logger.info(f"Starting Evaluation Service on port {EVALUATION_PORT}", module='MAIN')
+    start_scheduler()
     app.run(host='0.0.0.0', port=EVALUATION_PORT, debug=True, use_reloader=False, threaded=True)
