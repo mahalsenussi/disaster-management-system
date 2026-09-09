@@ -14,6 +14,7 @@ from evaluation_service.core.logger import get_logger
 from evaluation_service.core.cache import get_cache
 from evaluation_service.core.auth import get_auth_validator
 from evaluation_service.core.jobs import submit_job, get_job
+from evaluation_service.core.ollama import get_available_models
 from evaluation_service.modules.weather.service import WeatherService
 from evaluation_service.modules.weather.evaluator import WeatherEvaluator
 from evaluation_service.modules.weather.collector import WeatherCollector
@@ -28,6 +29,7 @@ from evaluation_service.modules.historical.service import HistoricalService
 from evaluation_service.modules.historical.importer import HistoricalImporter
 from evaluation_service.modules.chatbot.general_chat import GeneralChatbot
 from evaluation_service.modules.chatbot.medical_chat import MedicalChatbot
+from evaluation_service.modules.analysis.summarizer import AnalysisSummarizer
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -68,6 +70,7 @@ historical_service = HistoricalService()
 historical_importer = HistoricalImporter()
 general_chatbot = GeneralChatbot()
 medical_chatbot = MedicalChatbot()
+analysis_summarizer = AnalysisSummarizer()
 
 # Configuration
 EVALUATION_PORT = int(os.environ.get('EVALUATION_PORT', 5006))
@@ -1233,6 +1236,32 @@ You support LRC volunteers, staff, and the public with humanitarian information 
             'success': False,
             'error': str(e)
         }), 500
+
+@app.route('/api/analysis/summarize', methods=['POST'])
+def analysis_summarize():
+    """Aggregate context -> structured AI summary (used by public_app).
+
+    Defaults to synchronous (cloud-backed, ~1-3s). Pass ?async=1 for a
+    job_id + polling model instead.
+    """
+    data = request.get_json() or {}
+    kind = data.get('kind') or 'poi_category'
+    contexts = data.get('contexts') or []
+    if request.args.get('async') == '1':
+        job_id = submit_job(analysis_summarizer.summarize, contexts, kind)
+        return jsonify({'job_id': job_id, 'status': 'running'}), 202
+    return jsonify(analysis_summarizer.summarize(contexts, kind))
+
+@app.route('/api/analysis/status', methods=['GET'])
+def analysis_status():
+    """Report summarizer health and available Ollama models."""
+    try:
+        models = get_available_models(OLLAMA_URL)
+        if not models:
+            models = analysis_summarizer.model_priority
+        return jsonify({'status': 'ok', 'models': models, 'priority': analysis_summarizer.model_priority})
+    except Exception as e:
+        return jsonify({'status': 'error', 'error': str(e)}), 500
 
 @app.route('/api/jobs/<job_id>', methods=['GET'])
 def job_status(job_id):

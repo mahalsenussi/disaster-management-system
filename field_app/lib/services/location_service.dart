@@ -6,6 +6,11 @@ import 'auth_service.dart';
 
 class LocationService with ChangeNotifier {
   final AuthService _authService;
+
+  // GPS ping contract: must match the server's GPS_PING_INTERVAL in app.py.
+  // The server marks a team gps_active while pings arrive within
+  // GPS_ACTIVE_SECONDS (30s ping + 15s margin) and gps_lost afterwards.
+  static const Duration kGpsPingInterval = Duration(seconds: 30);
   
   Position? _currentPosition;
   bool _isTracking = false;
@@ -88,12 +93,12 @@ class LocationService with ChangeNotifier {
     }
     
     // Send location every 30 seconds to reduce database contention
-    _locationTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+    _locationTimer = Timer.periodic(kGpsPingInterval, (_) {
       if (!_isDisposed) _updateLocation();
     });
     
     // Retry queued locations every 30 seconds
-    _retryTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+    _retryTimer = Timer.periodic(kGpsPingInterval, (_) {
       if (!_isDisposed) _retryQueuedLocations();
     });
   }
@@ -167,7 +172,7 @@ class LocationService with ChangeNotifier {
         final teamNumber = _authService.teamNumber;
         final branchId = _authService.branchId;
         if (teamNumber != null && branchId != null) {
-          final refreshed = await _authService.loginWithTeamNumber(teamNumber, branchId);
+          final refreshed = await _authService.loginWithTeamNumber(teamNumber, branchId: branchId);
           if (refreshed) {
             print('Token refreshed, retrying location update');
             try {
