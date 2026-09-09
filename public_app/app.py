@@ -5,7 +5,7 @@ Designed for cPanel shared hosting
 """
 
 import traceback
-from flask import Flask, request, jsonify, render_template, g
+from flask import Flask, request, jsonify, render_template, g, send_from_directory
 from flask_cors import CORS
 import sqlite3
 import requests
@@ -713,6 +713,21 @@ def login_page():
 def dashboard():
     """Serve the dashboard (auth handled by frontend)."""
     return render_template('dashboard.html')
+
+@app.route('/field-web')
+def field_web():
+    """Serve the Flutter web build of the Field Ops app."""
+    return send_from_directory('/home/mahmoud/disaster_management/public_app/web', 'index.html')
+
+@app.route('/field-web/')
+def field_web_root():
+    """Serve the Flutter web app shell at /field-web/."""
+    return send_from_directory('/home/mahmoud/disaster_management/public_app/web', 'index.html')
+
+@app.route('/field-web/<path:path>')
+def field_web_static(path):
+    """Serve static assets (manifest, favicon, main.dart.js, etc.) for the Flutter web app."""
+    return send_from_directory('/home/mahmoud/disaster_management/public_app/web', path)
 
 @app.route('/reports')
 def reports_page():
