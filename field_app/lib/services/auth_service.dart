@@ -8,6 +8,7 @@ class AuthService with ChangeNotifier {
   String? _teamNumber;
   String? _teamName;
   int? _branchId;
+  String? _branchName;
   String? _token;  // JWT token
   bool _isLoading = true;
   bool _isLoggedIn = false;
@@ -16,6 +17,7 @@ class AuthService with ChangeNotifier {
   String? get teamNumber => _teamNumber;
   String? get teamName => _teamName;
   int? get branchId => _branchId;
+  String? get branchName => _branchName;
   String? get token => _token;
   bool get isLoading => _isLoading;
   bool get isLoggedIn => _isLoggedIn;
@@ -34,6 +36,7 @@ class AuthService with ChangeNotifier {
       final savedTeamNumber = prefs.getString('team_number');
       final savedTeamName = prefs.getString('team_name');
       final savedBranchId = prefs.getInt('branch_id');
+      final savedBranchName = prefs.getString('branch_name');
       final savedToken = prefs.getString('auth_token');
       
       // Check if token exists and is valid (not expired)
@@ -43,6 +46,7 @@ class AuthService with ChangeNotifier {
         _teamNumber = savedTeamNumber;
         _teamName = savedTeamName;
         _branchId = savedBranchId;
+        _branchName = savedBranchName;
         _token = savedToken;
         _isLoggedIn = true;
         print('Auto-login: Team $_teamNumber (Branch: $_branchId)');
@@ -55,15 +59,27 @@ class AuthService with ChangeNotifier {
     }
   }
   
-  /// Login with team number and branch ID
-  /// NEW: Uses JWT token-based auth with branch isolation
-  Future<bool> loginWithTeamNumber(String teamNumber, int branchId) async {
+  /// Login with team number.
+  /// Branch is auto-detected from GPS (lat/lng) when provided, otherwise the
+  /// given branchId is used. Supports teams shared between areas.
+  Future<bool> loginWithTeamNumber(
+    String teamNumber, {
+    int? branchId,
+    double? lat,
+    double? lng,
+  }) async {
     try {
-      // NEW: Call mobile login endpoint with team_number + branch_id
-      final response = await ApiService.post('/api/mobile/login', {
+      final payload = <String, dynamic>{
         'team_number': teamNumber,
-        'branch_id': branchId,
-      });
+      };
+      if (lat != null && lng != null) {
+        payload['lat'] = lat;
+        payload['lng'] = lng;
+      } else if (branchId != null) {
+        payload['branch_id'] = branchId;
+      }
+      
+      final response = await ApiService.post('/api/mobile/login', payload);
       
       if (response['token'] == null) {
         print('Login failed: No token received');
@@ -75,6 +91,7 @@ class AuthService with ChangeNotifier {
       _teamNumber = response['team_number']?.toString();
       _teamName = response['team_name'];
       _branchId = response['branch_id'];
+      _branchName = response['branch_name'] ?? response['branch_city'];
       _isLoggedIn = true;
       
       // Store token and credentials for offline use
@@ -82,11 +99,14 @@ class AuthService with ChangeNotifier {
       await prefs.setString('auth_token', _token!);
       await prefs.setString('team_id', _teamId!);
       await prefs.setString('team_number', _teamNumber!);
-      await prefs.setString('team_name', _teamName!);
+      await prefs.setString('team_name', _teamName ?? '');
       await prefs.setInt('branch_id', _branchId!);
+      if (_branchName != null) {
+        await prefs.setString('branch_name', _branchName!);
+      }
       
-      print('Login successful: Team $_teamNumber (Branch: $_branchId)');
-      print('Token expires in: ${response['expires_in'] ?? '7 days'} seconds');
+      print('Login successful: Team $_teamNumber (Branch: $_branchId) '
+          '${response['geo_assigned'] ?? ''}');
       notifyListeners();
       return true;
     } catch (e) {
@@ -109,11 +129,11 @@ class AuthService with ChangeNotifier {
         return false;
       }
       
-      return loginWithTeamNumber(teamNumber, branchId);
+      return loginWithTeamNumber(teamNumber, branchId: branchId);
     } catch (e) {
       print('QR login error: $e');
       // Fallback: treat as team_number only (legacy)
-      return loginWithTeamNumber(qrData, 1); // Default branch 1
+      return loginWithTeamNumber(qrData, branchId: 1); // Default branch 1
     }
   }
   
@@ -122,6 +142,7 @@ class AuthService with ChangeNotifier {
     _teamNumber = null;
     _teamName = null;
     _branchId = null;
+    _branchName = null;
     _token = null;
     _isLoggedIn = false;
     
@@ -130,6 +151,7 @@ class AuthService with ChangeNotifier {
     await prefs.remove('team_number');
     await prefs.remove('team_name');
     await prefs.remove('branch_id');
+    await prefs.remove('branch_name');
     await prefs.remove('auth_token');
     
     print('Logged out');

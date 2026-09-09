@@ -49,6 +49,41 @@ def is_in_branch_area(item_lat, item_lng, branch):
     # Check if point is within radius (using squared distance to avoid sqrt)
     return (dx * dx + dy * dy) <= (radius_deg * radius_deg)
 
+def haversine_km(lat1, lng1, lat2, lng2):
+    """Great-circle distance in km between two coordinates."""
+    import math
+    R = 6371.0
+    dlat = math.radians(lat2 - lat1)
+    dlng = math.radians(lng2 - lng1)
+    a = (math.sin(dlat / 2) ** 2
+         + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlng / 2) ** 2)
+    return 2 * R * math.asin(math.sqrt(a))
+
+def resolve_branch_by_location(conn, lat, lng):
+    """
+    Resolve the branch that covers a geographic point (lat, lng).
+    Returns {'branch': {...}, 'match_type': 'radius'} if inside a branch radius,
+    or {'branch': nearest, 'match_type': 'nearest'} if outside all radii,
+    or None if there are no active branches.
+    """
+    cursor = conn.cursor()
+    cursor.execute(
+        'SELECT id, name, city, region, lat, lng, radius_km FROM branches WHERE is_active = 1'
+    )
+    rows = [dict(row) for row in cursor.fetchall()]
+    if not rows:
+        return None
+
+    for branch in rows:
+        radius = branch.get('radius_km') or 10
+        if haversine_km(lat, lng, branch['lat'], branch['lng']) <= radius:
+            return {'branch': branch, 'match_type': 'radius'}
+
+    nearest = min(rows, key=lambda b: haversine_km(lat, lng, b['lat'], b['lng']))
+    nearest = dict(nearest)
+    nearest['distance_km'] = round(haversine_km(lat, lng, nearest['lat'], nearest['lng']), 2)
+    return {'branch': nearest, 'match_type': 'nearest'}
+
 def get_branches_for_geo_filtering(conn, user):
     """
     Get branches relevant for geo-based filtering based on user role.
@@ -56,26 +91,26 @@ def get_branches_for_geo_filtering(conn, user):
     """
     cursor = conn.cursor()
     
-    if user.get('role') == 'admin':
-        # Admin sees all branches
-        cursor.execute('SELECT id, name, lat, lng, region FROM branches WHERE is_active = 1')
+    if user.get('role') in ('admin', 'analyst'):
+        # Admin and analyst see all branches
+        cursor.execute('SELECT id, name, lat, lng, radius_km, region FROM branches WHERE is_active = 1')
     elif user.get('role') == 'regional_admin':
         # Regional admin sees branches in their region
         cursor.execute(
-            'SELECT id, name, lat, lng, region FROM branches WHERE region = ? AND is_active = 1',
+            'SELECT id, name, lat, lng, radius_km, region FROM branches WHERE region = ? AND is_active = 1',
             (user.get('region'),)
         )
     else:
         # Operators and teams only see their own branch
         cursor.execute(
-            'SELECT id, name, lat, lng, region FROM branches WHERE id = ? AND is_active = 1',
+            'SELECT id, name, lat, lng, radius_km, region FROM branches WHERE id = ? AND is_active = 1',
             (user.get('branch_id'),)
         )
-    
+
     branches = [dict(row) for row in cursor.fetchall()]
-    # Add default radius for geo filtering
+    # Ensure a default radius for geo filtering when not set
     for branch in branches:
-        branch['radius_km'] = branch.get('radius_km', 10) or 10
+        branch['radius_km'] = branch.get('radius_km') or 10
     return branches
 
 # ============== JWT Token Generation ==============
@@ -208,8 +243,8 @@ def apply_branch_filter(query_base, entity_branch_col='branch_id'):
     role = user.get('role')
     branch_id = user.get('branch_id')
     
-    if role == 'admin':
-        # Admin sees all - no filter
+    if role in ('admin', 'analyst'):
+        # Admin and analyst see all - no filter
         return query_base
     
     if role == 'regional_admin':
@@ -218,8 +253,8 @@ def apply_branch_filter(query_base, entity_branch_col='branch_id'):
         region = user.get('region')
         return f"{query_base} JOIN branches ON {entity_branch_col} = branches.id WHERE branches.region = '{region}'"
     
-    if role == 'operator':
-        # Operator sees ONLY their branch
+    if role in ('operator', 'data_entry'):
+        # Operator and data entry see ONLY their branch
         return f"{query_base} WHERE {entity_branch_col} = {branch_id}"
     
     # Unknown role - no access (use SQL FALSE)
@@ -240,8 +275,8 @@ def enforce_branch_on_write(data):
     # Dashboard users
     role = user.get('role')
     
-    if role == 'operator':
-        # Operators CANNOT choose branch - forced from their assignment
+    if role in ('operator', 'data_entry'):
+        # Operators/data entry CANNOT choose branch - forced from their assignment
         data['branch_id'] = user.get('branch_id')
     
     # Admin can choose any branch - validation happens in endpoint

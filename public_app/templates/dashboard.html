@@ -568,6 +568,69 @@
             color: #fff;
         }
         
+        select.control-btn {
+            -webkit-appearance: none;
+            appearance: none;
+            max-width: 200px;
+            min-height: 38px;
+            text-align: left;
+        }
+        
+        .control-btn.poi-on {
+            background: #27ae60;
+            color: #fff;
+        }
+        
+        .poi-group-panel {
+            position: absolute;
+            top: 48px;
+            left: 10px;
+            z-index: 1000;
+            background: rgba(20, 24, 32, 0.95);
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 8px;
+            min-width: 220px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+        
+        .poi-group-title {
+            cursor: pointer;
+            color: #ddd;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 6px;
+            border-radius: 4px;
+            margin-bottom: 4px;
+        }
+        
+        .poi-group-title:hover {
+            background: #2a2f3a;
+        }
+        
+        .poi-group-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        
+        .poi-group-chip {
+            cursor: pointer;
+            border: 1px solid #444;
+            background: #22262f;
+            color: #ddd;
+            border-radius: 14px;
+            padding: 3px 10px;
+            font-size: 12px;
+            transition: all 0.15s;
+        }
+        
+        .poi-group-chip.on {
+            border-color: #27ae60;
+            background: rgba(39, 174, 96, 0.2);
+            color: #fff;
+        }
+        
         .control-btn.primary:hover {
             background: #d63850;
         }
@@ -608,6 +671,21 @@
         .popup-content button:hover {
             background: #d63850;
         }
+        
+        .poi-badges { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 6px; }
+        .pbadge { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; }
+        .pbadge-verified { background: #e8f8ef; color: #1e8e4e; }
+        .pbadge-unverified { background: #fdeeee; color: #c0392b; }
+        .pbadge-src { background: #eef1ff; color: #3b5bdb; }
+        .pbadge-cat { background: #f2f2f2; color: #666; }
+        .popup-fields {
+            border-top: 1px solid #f0f1f5; margin-top: 6px; padding-top: 6px;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 2px 10px;
+        }
+        .popup-field { font-size: 11.5px; margin-bottom: 2px; }
+        .popup-field span { color: #999; }
+        .popup-field-wide { grid-column: 1 / -1; }
+        .leaflet-popup-content { max-height: 320px; overflow-y: auto; }
         
         /* Team selector */
         .team-selector {
@@ -1228,6 +1306,7 @@
             <button class="sidebar-tab" onclick="switchTab('road-blocks')">🚧 Road Blocks</button>
             <button class="sidebar-tab" onclick="switchTab('reports')" data-i18n="reports">Reports</button>
             <button class="sidebar-tab" onclick="switchTab('field-reports')">📊 Field Reports</button>
+            <button class="sidebar-tab" onclick="window.location.href='/reports'">🏥 Reports &amp; Intelligence</button>
             <button class="sidebar-tab admin-only" onclick="switchTab('manage')" id="manage-tab-btn" style="display:none" data-i18n="manage">Manage</button>
         </div>
         
@@ -1255,6 +1334,7 @@
         <div class="tab-content" id="tab-teams">
             <div class="tab-header">
                 <h2>Teams</h2>
+                <input type="search" id="team-search-input" placeholder="🔍 Search by name..." oninput="renderTeamsList()" style="flex: 1; max-width: 320px; min-width: 160px; padding: 8px 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px;">
                 <button class="btn-create" onclick="enableTeamCreation()">+ New</button>
             </div>
             <div id="teams-list">
@@ -1385,6 +1465,12 @@
         
         <div class="map-controls">
             <button class="control-btn primary" onclick="refreshData()">Refresh</button>
+            <button class="control-btn" onclick="togglePoiLayer()" id="poi-layer-btn">📍 POIs: On</button>
+            <button class="control-btn" onclick="togglePoiFilterPanel()" id="poi-filter-btn">🧭 Filter Facilities</button>
+            <div class="poi-group-panel" id="poi-group-panel" style="display: none;">
+                <div class="poi-group-title" id="poi-group-all" onclick="togglePoiGroup('__all__')">Show all groups ▾</div>
+                <div id="poi-group-chips"></div>
+            </div>
             <button class="control-btn" onclick="clearRoutes()">Clear Routes</button>
             <button class="control-btn" onclick="toggleRoadBlockMode()" id="road-block-btn">🚧 Add Road Block</button>
             <button class="control-btn" onclick="togglePlanningMode()" id="planning-mode-btn">🧠 Planning Mode</button>
@@ -1694,6 +1780,34 @@
             <button class="btn-primary" onclick="createRoadBlock()">Create</button>
         </div>
     </div>
+
+    <!-- Send Destination Mode Banner -->
+    <div id="send-dest-banner" style="display: none; position: fixed; top: 12px; left: 50%; transform: translateX(-50%); z-index: 12000; background: #9b59b6; color: #fff; padding: 10px 16px; border-radius: 8px; font-size: 13px; box-shadow: 0 2px 10px rgba(0,0,0,.25);">
+        <span id="send-dest-banner-text">📍 Click on the map to choose the destination point</span>
+        <button onclick="cancelSendDestination()" style="margin-left: 10px; background: rgba(255,255,255,.25); border: none; color: #fff; padding: 4px 10px; border-radius: 4px; cursor: pointer;">Cancel</button>
+    </div>
+
+    <!-- Send Destination Modal -->
+    <div class="incident-modal" id="send-destination-modal">
+        <h3>📍 Send Point to Team</h3>
+        <label>Team</label>
+        <input type="text" id="send-destination-team" disabled style="background:#f0f0f0;">
+        <input type="hidden" id="send-destination-team-id">
+        
+        <label>Label (optional)</label>
+        <input type="text" id="send-destination-label" placeholder="e.g., Hospital - Benghazi Medical, Staging point, Shelter...">
+        
+        <label>Coordinates</label>
+        <input type="text" id="send-destination-coords" disabled style="background:#f0f0f0;">
+        
+        <input type="hidden" id="send-destination-lat">
+        <input type="hidden" id="send-destination-lng">
+        
+        <div class="modal-buttons">
+            <button class="btn-secondary" onclick="closeSendDestinationModal()">Cancel</button>
+            <button class="btn-primary" onclick="sendDestination()">Send to Team</button>
+        </div>
+    </div>
     
     <!-- Point Creation Modal -->
     <div class="incident-modal" id="point-modal">
@@ -1939,6 +2053,21 @@
         let routeLines = {};
         let pointMarkers = {};
         let roadBlockMarkers = {};
+        let poiMarkers = {};
+        let poiLayerVisible = true;
+        let poiCategory = '';
+        const POI_GROUPS = {
+            'Health':       { icon: '🏥', categories: ['hospital', 'clinic', 'doctors', 'pharmacy'] },
+            'Emergency':    { icon: '🚨', categories: ['police', 'fire_station'] },
+            'Education':    { icon: '🎓', categories: ['school', 'university', 'kindergarten'] },
+            'Finance':      { icon: '🏦', categories: ['bank'] },
+            'Fuel':         { icon: '⛽', categories: ['fuel'] },
+            'Other':        { icon: '📌', categories: [] }
+        };
+        let poiGroupVisible = {};
+        Object.keys(POI_GROUPS).forEach(g => poiGroupVisible[g] = true);
+        let pois = [];
+        let poiMoveTimer = null;
         let roadBlocks = [];
         let selectedIncident = null;
         let selectedTeam = null;
@@ -1953,6 +2082,8 @@
         let manualWaypoints = [];
         let manualPolyline = null;
         let waypointMarkers = [];
+        let sendDestinationTeamId = null;
+        let sendDestinationTeamName = '';
         
         // Auth variables
         let currentUser = null;
@@ -2857,7 +2988,9 @@
             // Add map click handler for creation based on current tab
             map.on('click', function(e) {
                 clickedLocation = e.latlng;
-                if (manualRouteMode) {
+                if (sendDestinationTeamId) {
+                    openSendDestinationModal(e.latlng.lat, e.latlng.lng);
+                } else if (manualRouteMode) {
                     // Add waypoint for manual routing
                     addManualWaypoint(e.latlng.lat, e.latlng.lng);
                 } else if (roadBlockCreationMode) {
@@ -2874,6 +3007,14 @@
                 } else if (currentTab === 'teams' && teamCreationMode) {
                     openTeamModal(e.latlng.lat, e.latlng.lng);
                     teamCreationMode = false;
+                }
+            });
+            
+            // Reload POIs when admin pans/zooms to current view
+            map.on('moveend', function() {
+                if (currentUser && currentUser.role === 'admin') {
+                    clearTimeout(poiMoveTimer);
+                    poiMoveTimer = setTimeout(loadPois, 600);
                 }
             });
         }
@@ -2904,6 +3045,8 @@
                     apiGet('/api/reports/summary'),
                     apiGet('/api/road-blocks')
                 ]);
+                await loadPois();
+                buildPoiGroupChips();
                 
                 incidents = incidentsData || [];
                 teams = teamsData || [];
@@ -2991,6 +3134,11 @@
                     case 'gps_lost':
                         markerColor = '#f39c12'; // Orange
                         stateLabel = 'GPS LOST';
+                        isDraggable = false;
+                        break;
+                    case 'offline':
+                        markerColor = '#7f8c8d'; // Grey
+                        stateLabel = 'OFFLINE';
                         isDraggable = false;
                         break;
                     default: // manual
@@ -3189,6 +3337,177 @@
                 
                 roadBlockMarkers[block.id] = circle;
             });
+        }
+        
+        // ============== POINTS OF INTEREST LAYER ==============
+        
+        const POI_COLORS = {
+            'hospital': '#e94560',
+            'clinic': '#f39c12',
+            'doctors': '#00897b',
+            'pharmacy': '#27ae60',
+            'police': '#2980b9',
+            'fire_station': '#d35400',
+            'school': '#8e44ad',
+            'university': '#3949ab',
+            'kindergarten': '#f06292',
+            'bank': '#6d4c41',
+            'fuel': '#546e7a'
+        };
+        
+        const POI_ICONS = {
+            'hospital': '🏥',
+            'clinic': '⚕️',
+            'doctors': '🩺',
+            'pharmacy': '💊',
+            'police': '👮',
+            'fire_station': '🚒',
+            'school': '🏫',
+            'university': '🎓',
+            'kindergarten': '🧸',
+            'bank': '🏦',
+            'fuel': '⛽'
+        };
+        
+        async function loadPois() {
+            try {
+                let url = '/api/pois';
+                const params = new URLSearchParams();
+                const visibleCats = Object.entries(POI_GROUPS)
+                    .filter(([g]) => poiGroupVisible[g])
+                    .flatMap(([, info]) => info.categories);
+                if (visibleCats.length && poiCategory) params.set('category', poiCategory);
+                else if (visibleCats.length < 11) params.set('category', visibleCats.join(','));
+                if (currentUser && currentUser.role === 'admin') {
+                    // Admin: restrict to current map view to keep the map light
+                    const b = map.getBounds();
+                    params.set('bbox', [b.getSouthWest().lat, b.getSouthWest().lng, b.getNorthEast().lat, b.getNorthEast().lng].map(v => v.toFixed(4)).join(','));
+                }
+                const qs = params.toString();
+                if (qs) url += '?' + qs;
+                pois = (await apiGet(url)) || [];
+                renderPois();
+                console.log('POIs loaded:', pois.length);
+            } catch (error) {
+                console.error('Error loading POIs:', error);
+            }
+        }
+        
+        function poiGroupFor(category) {
+            for (const [group, info] of Object.entries(POI_GROUPS)) {
+                if (info.categories.includes(category)) return group;
+            }
+            return 'Other';
+        }
+        
+        function buildPoiGroupChips() {
+            const container = document.getElementById('poi-group-chips');
+            if (!container) return;
+            container.innerHTML = '';
+            container.className = 'poi-group-chips';
+            Object.keys(POI_GROUPS).forEach(group => {
+                const chip = document.createElement('span');
+                chip.className = 'poi-group-chip on';
+                chip.id = 'chip-' + group;
+                chip.textContent = `${POI_GROUPS[group].icon} ${group}`;
+                chip.onclick = () => togglePoiGroup(group);
+                container.appendChild(chip);
+            });
+        }
+        
+        function togglePoiGroup(group) {
+            poiCategory = '';
+            if (group === '__all__') {
+                Object.keys(POI_GROUPS).forEach(g => poiGroupVisible[g] = true);
+            } else {
+                poiGroupVisible[group] = !poiGroupVisible[group];
+                const allOn = Object.values(poiGroupVisible).every(v => v);
+                const title = document.getElementById('poi-group-all');
+                if (title) title.textContent = allOn ? 'Show all groups ▾' : 'Filtering active ▾';
+            }
+            refreshPoiGroupUi();
+            loadPois();
+            renderPois();
+        }
+        
+        function refreshPoiGroupUi() {
+            document.querySelectorAll('.poi-group-chip').forEach(chip => {
+                const group = chip.id.replace('chip-', '');
+                chip.classList.toggle('on', !!poiGroupVisible[group]);
+            });
+        }
+        
+        function togglePoiFilterPanel() {
+            const panel = document.getElementById('poi-group-panel');
+            if (!panel) return;
+            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+        }
+        
+        function renderPois() {
+            Object.values(poiMarkers).forEach(marker => map.removeLayer(marker));
+            poiMarkers = {};
+            if (!poiLayerVisible || !map) return;
+            
+            pois.forEach(poi => {
+                if (!poiGroupVisible[poiGroupFor(poi.category)]) return;
+                const color = POI_COLORS[poi.category] || '#95a5a6';
+                const icon = POI_ICONS[poi.category] || '📍';
+                const rawName = poi.name || '';
+                const label = rawName
+                    ? rawName
+                    : (poi.category.charAt(0).toUpperCase() + poi.category.slice(1).replace('_', ' '));
+                
+                const marker = L.divIcon({
+                    className: 'poi-marker',
+                    html: `<div style="background: ${color}; width: 18px; height: 18px; border-radius: 50%; border: 2px solid #fff; display: flex; align-items: center; justify-content: center; font-size: 10px;">${icon}</div>`,
+                    iconSize: [18, 18],
+                    iconAnchor: [9, 9]
+                });
+                
+                const circle = L.marker([poi.lat, poi.lng], { icon: marker });
+                const catData = poi.category_data && typeof poi.category_data === 'object' ? poi.category_data : {};
+                const popupFields = Object.entries(catData)
+                    .filter(([, v]) => v !== null && v !== '' && v !== undefined)
+                    .map(([k, v]) => {
+                        const kl = (k || '').replace(/_/g, ' ');
+                        let val = v;
+                        if (typeof v === 'boolean') val = v ? '✅ Yes' : '❌ No';
+                        else if (typeof v === 'number') val = v;
+                        if (String(k).toLowerCase() === 'notes') return `<p class="popup-field-wide"><span>${kl}:</span> ${val}</p>`;
+                        return `<p class="popup-field"><span>${kl}:</span> ${val}</p>`;
+                    })
+                    .join('');
+                circle.bindPopup(`
+                    <div class="popup-content poi-popup">
+                        <h3>${icon} ${label}</h3>
+                        <p class="poi-badges">
+                            <span class="pbadge ${poi.verified ? 'pbadge-verified' : 'pbadge-unverified'}">${poi.verified ? '◉ Verified' : '○ Not verified'}</span>
+                            <span class="pbadge pbadge-src">${poi.source === 'custom' ? 'custom' : 'OSM'}</span>
+                            <span class="pbadge pbadge-cat">${poi.category}</span>
+                        </p>
+                        ${poi.address ? `<p>📍 ${poi.address}</p>` : ''}
+                        ${poi.phone ? `<p>📞 ${poi.phone}</p>` : ''}
+                        ${poi.website ? `<p>🌐 ${poi.website}</p>` : ''}
+                        <p>${t('lat')}: ${poi.lat.toFixed(4)} / ${t('lng')}: ${poi.lng.toFixed(4)}</p>
+                        ${popupFields ? `<div class="popup-fields">${popupFields}</div>` : ''}
+                    </div>
+                `, { autoPan: false });
+                circle.addTo(map);
+                poiMarkers[poi.id] = circle;
+            });
+        }
+        
+        function togglePoiLayer() {
+            poiLayerVisible = !poiLayerVisible;
+            const btn = document.getElementById('poi-layer-btn');
+            if (poiLayerVisible) {
+                btn.textContent = '📍 POIs: On';
+                btn.classList.add('poi-on');
+            } else {
+                btn.textContent = '📍 POIs: Off';
+                btn.classList.remove('poi-on');
+            }
+            renderPois();
         }
         
         // Incident creation modal functions
@@ -4328,6 +4647,70 @@
             document.getElementById('modal-overlay').classList.add('active');
         }
         
+        function enableSendDestination(teamId, teamName) {
+            sendDestinationTeamId = teamId;
+            sendDestinationTeamName = teamName;
+            document.getElementById('send-dest-banner').style.display = 'block';
+            document.getElementById('send-dest-banner-text').textContent = `📍 Click on the map to choose the point to send to ${teamName}`;
+        }
+        
+        function cancelSendDestination() {
+            sendDestinationTeamId = null;
+            sendDestinationTeamName = '';
+            document.getElementById('send-dest-banner').style.display = 'none';
+        }
+        
+        function openSendDestinationModal(lat, lng) {
+            document.getElementById('send-destination-modal').classList.add('active');
+            document.getElementById('modal-overlay').classList.add('active');
+            document.getElementById('send-destination-team').value = sendDestinationTeamName;
+            document.getElementById('send-destination-team-id').value = sendDestinationTeamId;
+            document.getElementById('send-destination-lat').value = lat;
+            document.getElementById('send-destination-lng').value = lng;
+            document.getElementById('send-destination-coords').value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+            document.getElementById('send-destination-label').value = '';
+            cancelSendDestination();
+        }
+        
+        function closeSendDestinationModal() {
+            document.getElementById('send-destination-modal').classList.remove('active');
+            document.getElementById('modal-overlay').classList.remove('active');
+        }
+        
+        async function sendDestination() {
+            const teamId = document.getElementById('send-destination-team-id').value;
+            const lat = parseFloat(document.getElementById('send-destination-lat').value);
+            const lng = parseFloat(document.getElementById('send-destination-lng').value);
+            const label = document.getElementById('send-destination-label').value.trim();
+            
+            if (!teamId || isNaN(lat) || isNaN(lng)) {
+                alert('Point not set. Please click on the map first.');
+                return;
+            }
+            
+            closeSendDestinationModal();
+            showLoading(true);
+            
+            try {
+                const response = await fetch(`/api/teams/${teamId}/destination`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ lat: lat, lng: lng, label: label })
+                });
+                if (response.ok) {
+                    alert(`📍 Point sent to ${document.getElementById('send-destination-team').value}` +
+                        (label ? ` (${label})` : '') + `. The team will see it on their app.`);
+                } else {
+                    const err = await response.json();
+                    alert('Failed to send: ' + (err.error || 'unknown error'));
+                }
+            } catch (error) {
+                alert('Error sending destination: ' + error.message);
+            }
+            
+            showLoading(false);
+        }
+        
         function closeRoadBlockModal() {
             document.getElementById('road-block-modal').classList.remove('active');
             document.getElementById('modal-overlay').classList.remove('active');
@@ -4607,42 +4990,25 @@
             showLoading(false);
         }
         
-        // Update sidebar with tab content
-        function updateSidebar() {
-            // Update incidents list
-            const incidentsList = document.getElementById('incidents-list');
-            incidentsList.innerHTML = '';
-            
-            incidents.forEach(incident => {
-                const item = document.createElement('div');
-                item.className = 'list-item';
-                item.onclick = () => {
-                    const marker = incidentMarkers[incident.id];
-                    if (marker) {
-                        map.panTo([incident.lat, incident.lng]);
-                        showIncidentDetail(incident);
-                    }
-                };
-                
-                const severity = parseInt(incident.severity) || 3;
-                const severityClass = severity >= 3 ? 'severity-high' : 'severity-medium';
-                
-                item.innerHTML = `
-                    <h4>${incident.type}</h4>
-                    <p>${t('status')}: ${incident.status}</p>
-                    <div class="meta">
-                        <span class="severity-badge ${severityClass}">${t('severity')}: ${incident.severity}</span>
-                    </div>
-                `;
-                
-                incidentsList.appendChild(item);
-            });
-            
-            // Update teams list
+        function renderTeamsList() {
             const teamsList = document.getElementById('teams-list');
+            if (!teamsList) return;
             teamsList.innerHTML = '';
             
-            teams.forEach(team => {
+            const query = (document.getElementById('team-search-input')?.value || '').trim().toLowerCase();
+            
+            const filtered = query
+                ? teams.filter(team =>
+                    (team.name || '').toLowerCase().includes(query) ||
+                    (team.team_number ? String(team.team_number) : '').includes(query))
+                : teams;
+            
+            if (filtered.length === 0) {
+                teamsList.innerHTML = '<div class="list-item" style="color:#888;">No teams match "' + query + '"</div>';
+                return;
+            }
+            
+            filtered.forEach(team => {
                 const item = document.createElement('div');
                 item.className = 'list-item';
                 
@@ -4680,6 +5046,7 @@
                 actions.className = 'list-item-actions';
                 actions.innerHTML = `
                     <button onclick="event.stopPropagation(); openTeamReportModal(${team.id}, ${selectedIncident ? selectedIncident.id : 'null'})" style="padding: 4px 8px; font-size: 11px; margin-right: 5px; background: #9b59b6;">📡 Report</button>
+                    <button onclick="event.stopPropagation(); enableSendDestination(${team.id}, '${String(team.name).replace(/'/g, "\\'")}')" style="padding: 4px 8px; font-size: 11px; margin-right: 5px; background: #8e44ad; color: #fff;">📍 Send Point</button>
                     <button onclick="event.stopPropagation(); openTeamEditModal(${team.id})" style="padding: 4px 8px; font-size: 11px; margin-right: 5px;">${t('edit')}</button>
                     <button onclick="event.stopPropagation(); deleteTeam(${team.id})" style="padding: 4px 8px; font-size: 11px; background: #e74c3c;">${t('delete')}</button>
                 `;
@@ -4688,6 +5055,41 @@
                 item.appendChild(actions);
                 teamsList.appendChild(item);
             });
+        }
+
+        // Update sidebar with tab content
+        function updateSidebar() {
+            // Update incidents list
+            const incidentsList = document.getElementById('incidents-list');
+            incidentsList.innerHTML = '';
+            
+            incidents.forEach(incident => {
+                const item = document.createElement('div');
+                item.className = 'list-item';
+                item.onclick = () => {
+                    const marker = incidentMarkers[incident.id];
+                    if (marker) {
+                        map.panTo([incident.lat, incident.lng]);
+                        showIncidentDetail(incident);
+                    }
+                };
+                
+                const severity = parseInt(incident.severity) || 3;
+                const severityClass = severity >= 3 ? 'severity-high' : 'severity-medium';
+                
+                item.innerHTML = `
+                    <h4>${incident.type}</h4>
+                    <p>${t('status')}: ${incident.status}</p>
+                    <div class="meta">
+                        <span class="severity-badge ${severityClass}">${t('severity')}: ${incident.severity}</span>
+                    </div>
+                `;
+                
+                incidentsList.appendChild(item);
+            });
+            
+            // Update teams list
+            renderTeamsList();
             
             // Update points list
             const pointsList = document.getElementById('points-list');

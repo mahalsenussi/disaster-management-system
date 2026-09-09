@@ -58,6 +58,19 @@ CREATE TABLE IF NOT EXISTS points (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Management-sent destination points for teams
+CREATE TABLE IF NOT EXISTS team_destinations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    team_id INTEGER NOT NULL,
+    lat REAL NOT NULL,
+    lng REAL NOT NULL,
+    label TEXT,
+    created_by INTEGER,
+    status TEXT DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (team_id) REFERENCES teams(id)
+);
+
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_incidents_status ON incidents(status);
 CREATE INDEX IF NOT EXISTS idx_incidents_created ON incidents(created_at);

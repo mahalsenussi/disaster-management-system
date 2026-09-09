@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports &amp; Intelligence</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #f5f6fa;
+            color: #1a1a2e;
+            min-height: 100vh;
+        }
+        body[dir="rtl"] { text-align: right; }
+
+        .top-bar {
+            position: sticky; top: 0; z-index: 1000;
+            background: #1a1a2e; color: #fff;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 22px; height: 64px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            gap: 16px;
+        }
+        .top-bar .left, .top-bar .right { display: flex; align-items: center; gap: 14px; }
+        .logo-img { height: 40px; }
+        .top-bar .title { font-size: 17px; font-weight: 700; }
+        .top-bar .subtitle { font-size: 12px; opacity: .8; }
+        .top-bar .username { font-size: 13px; font-weight: 600; }
+        .top-bar .role-badge {
+            font-size: 11px; padding: 3px 9px; border-radius: 4px;
+            background: #e94560; text-transform: uppercase; font-weight: 600;
+        }
+        .link-btn {
+            background: rgba(255,255,255,.12); color: #fff; border: 1px solid rgba(255,255,255,.25);
+            padding: 6px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; text-decoration: none;
+        }
+        .link-btn:hover { background: rgba(255,255,255,.22); }
+
+        .nav-tabs {
+            display: flex; gap: 4px; background: #fff; padding: 8px 22px 0;
+            border-bottom: 1px solid #e0e0e0; position: sticky; top: 64px; z-index: 999;
+        }
+        .nav-tab {
+            padding: 10px 18px; border: none; background: none; cursor: pointer;
+            font-size: 13px; font-weight: 600; color: #666; border-bottom: 3px solid transparent;
+        }
+        .nav-tab.active { color: #e94560; border-bottom-color: #e94560; }
+
+        .tab-content { display: none; padding: 20px 22px 40px; }
+        .tab-content.active { display: block; }
+
+        .card {
+            background: #fff; border: 1px solid #e8e9ef; border-radius: 8px;
+            padding: 18px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.05);
+        }
+        .card h3 { font-size: 14px; margin-bottom: 12px; color: #1a1a2e; }
+        .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 14px; }
+        .toolbar input, .toolbar select {
+            padding: 7px 10px; border: 1px solid #ced0d9; border-radius: 5px; font-size: 13px; background: #fff;
+        }
+        .btn {
+            background: #e94560; color: #fff; border: none; padding: 8px 14px; border-radius: 5px;
+            font-size: 13px; cursor: pointer; font-weight: 600;
+        }
+        .btn:hover { filter: brightness(1.08); }
+        .btn:disabled { opacity: .55; cursor: not-allowed; }
+        .btn.secondary { background: #34495e; }
+        .btn.ghost { background: transparent; color: #e94560; border: 1px solid #e94560; }
+        .btn.small { padding: 4px 9px; font-size: 12px; }
+        .btn.flat { background: #eef0f5; color: #34495e; }
+
+        .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+        .chip {
+            padding: 5px 12px; border-radius: 16px; font-size: 12px; cursor: pointer;
+            background: #eef0f5; color: #34495e; border: 1px solid transparent; font-weight: 600;
+        }
+        .chip.active { background: #e94560; color: #fff; }
+
+        .badge { font-size: 11px; padding: 2px 8px; border-radius: 4px; font-weight: 600; }
+        .badge.verified { background: #e8f8ef; color: #1e8e4e; }
+        .badge.unverified { background: #fdeeee; color: #c0392b; }
+        .badge.custom { background: #eef1ff; color: #3b5bdb; }
+        .badge.osm { background: #f2f2f2; color: #666; }
+        .badge.risk-low { background: #e8f8ef; color: #1e8e4e; }
+        .badge.risk-medium { background: #fff7e6; color: #b7791f; }
+        .badge.risk-high { background: #fdeeee; color: #c0392b; }
+        .badge.status-normal { background: #e8f8ef; color: #1e8e4e; }
+        .badge.status-alert { background: #fff7e6; color: #b7791f; }
+        .badge.status-critical { background: #fdeeee; color: #c0392b; }
+        .badge.status-open { background: #fdeeee; color: #c0392b; }
+        .badge.status-resolved { background: #fff7e6; color: #b7791f; }
+        .badge.status-closed { background: #e8f8ef; color: #1e8e4e; }
+
+        ul.list { list-style: none; }
+        ul.list li {
+            padding: 10px 4px; border-bottom: 1px solid #f0f1f5; display: flex;
+            justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;
+        }
+        ul.list li:last-child { border-bottom: none; }
+        .item-title { font-weight: 600; font-size: 13.5px; }
+        .item-sub { font-size: 12px; color: #777; margin-top: 2px; }
+        .muted { color: #888; font-size: 12px; }
+
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        @media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
+
+        label.field { display: block; margin-bottom: 10px; font-size: 12.5px; font-weight: 600; }
+        label.field input, label.field textarea, label.field select {
+            width: 100%; margin-top: 4px; padding: 7px 10px; border: 1px solid #ced0d9;
+            border-radius: 5px; font-size: 13px; font-family: inherit; background: #fff;
+        }
+        label.field input[type="checkbox"] { width: auto; margin: 0 6px 0 0; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        @media (max-width: 700px) { .form-row { grid-template-columns: 1fr; } }
+
+        #poi-map { height: 240px; border-radius: 6px; border: 1px solid #ced0d9; margin-bottom: 10px; }
+
+        .report-row { cursor: pointer; }
+        .followup-actions, .row-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+
+        .digest-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+        .digest-card { border: 1px solid #e8e9ef; border-radius: 8px; background: #fff; padding: 14px; }
+        .digest-card h4 { font-size: 13.5px; margin-bottom: 6px; display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+        .digest-card .one-liner { font-size: 13px; color: #333; margin: 6px 0; }
+        .digest-card .issues, .digest-card .actions { font-size: 12.5px; margin-top: 8px; }
+        .digest-card ul { list-style: disc; padding-left: 18px; margin-top: 3px; color: #444; }
+        body[dir="rtl"] .digest-card ul { padding-left: 0; padding-right: 18px; }
+        .digest-card .meta { font-size: 11px; color: #999; margin-top: 8px; }
+
+        .section-box { border: 1px solid #e8e9ef; border-radius: 6px; margin-bottom: 8px; }
+        .section-box .sec-head {
+            cursor: pointer; font-weight: 700; font-size: 13px; padding: 9px 12px;
+            color: #1a1a2e; user-select: none; -webkit-user-select: none;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .section-box .sec-head::after { content: "▾"; color: #999; font-size: 12px; }
+        .section-box:not(.open) .sec-head::after { content: "▸"; }
+        .section-box .sec-body { display: none; padding: 4px 12px 12px; }
+        .section-box.open .sec-body { display: block; }
+        .section-box.open .sec-head { background: #f7f8fb; border-radius: 6px 6px 0 0; }
+
+        .spinner { display: inline-block; width: 12px; height: 12px; border: 2px solid #ccc;
+            border-top-color: #e94560; border-radius: 50%; animation: spin .7s linear infinite; vertical-align: -2px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .empty { text-align: center; color: #999; padding: 26px 0; font-size: 13px; }
+        .toast {
+            position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%);
+            background: #1a1a2e; color: #fff; padding: 10px 18px; border-radius: 6px;
+            font-size: 13px; z-index: 2000; display: none; max-width: 90%;
+        }
+        .toast.error { background: #c0392b; }
+        .toast.ok { background: #1e8e4e; }
+
+        .modal-backdrop {
+            position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 1500;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .modal-box {
+            background: #fff; border-radius: 10px; width: 94%; max-width: 960px;
+            max-height: 92vh; display: flex; flex-direction: column; overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0,0,0,.3);
+        }
+        .modal-head { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid #e8e9ef; }
+        .modal-head h3 { font-size: 15px; }
+        .modal-foot { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-top: 1px solid #e8e9ef; gap: 10px; flex-wrap: wrap; }
+        #pick-map { flex: 1; min-height: 55vh; }
+    </style>
+</head>
+<body>
+    <div class="top-bar">
+        <div class="left">
+            <img src="/static/img/hala.png" alt="Logo" class="logo-img">
+            <div>
+                <div class="title" data-i18n="page_title">Reports &amp; Intelligence</div>
+                <div class="subtitle" data-i18n="page_sub">POI Facilities | Daily SITREPs | Follow-ups | AI Analysis</div>
+            </div>
+        </div>
+        <div class="right">
+            <a class="link-btn" href="/dashboard" data-i18n="back_dash">← Operations Dashboard</a>
+            <span class="username" id="user-name">Loading...</span>
+            <span class="role-badge" id="user-role">...</span>
+        </div>
+    </div>
+
+    <div class="nav-tabs">
+        <button class="nav-tab active" onclick="switchTab('facilities', this)">🏥 <span data-i18n="tab_pois">Facilities (POIs)</span></button>
+        <button class="nav-tab" onclick="switchTab('reports', this)">📋 <span data-i18n="tab_daily">Daily Reports</span></button>
+        <button class="nav-tab" onclick="switchTab('followups', this)">📌 <span data-i18n="tab_followups">Follow-ups</span></button>
+        <button class="nav-tab" onclick="switchTab('analysis', this)">🧠 <span data-i18n="tab_analysis">Analysis</span></button>
+    </div>
+
+    <!-- ============ FACILITIES / POIs ============ -->
+    <div class="tab-content active" id="tab-facilities">
+        <div class="card">
+            <h3>🏥 <span data-i18n="pois_title">Facilities &amp; Points of Interest</span></h3>
+            <div class="toolbar">
+                <input id="poi-search" placeholder="Search by name / address..." oninput="loadPois()" style="flex:1; min-width:180px;">
+                <select id="poi-cat-filter" onchange="setPoiCategory(this.value)" style="min-width:170px;">
+                    <option value="">All categories</option>
+                </select>
+                <button class="btn" onclick="openPoiForm()" id="poi-add-btn">+ <span data-i18n="add_poi">Add Facility</span></button>
+            </div>
+            <div class="grid-2">
+                <div>
+                    <div class="muted" data-i18n="poi_list_hint" style="margin-bottom:6px;">Facilities (click to edit)</div>
+                    <ul class="list" id="poi-list" style="max-height: 560px; overflow-y:auto;"></ul>
+                </div>
+                <div id="poi-form-wrap" style="display:none;">
+                    <div class="card">
+                        <h3 id="poi-form-title">Add Facility</h3>
+                        <div id="poi-map"></div>
+                        <button class="btn small flat" onclick="openMapPicker()" style="width:100%; margin-bottom:10px;">🗺️ <span data-i18n="f_pickmap">Pick location on full map</span></button>
+                        <div class="form-row">
+                            <label class="field"><span data-i18n="f_name">Name *</span>
+                                <input id="poi-name" required></label>
+                            <label class="field"><span data-i18n="f_category">Category *</span>
+                                <select id="poi-cat"></select></label>
+                        </div>
+                        <div class="form-row">
+                            <label class="field"><span data-i18n="f_lat">Latitude</span>
+                                <input id="poi-lat" type="number" step="any"></label>
+                            <label class="field"><span data-i18n="f_lng">Longitude</span>
+                                <input id="poi-lng" type="number" step="any"></label>
+                        </div>
+                        <div class="form-row">
+                            <label class="field"><span data-i18n="f_address">Address</span>
+                                <input id="poi-address"></label>
+                            <label class="field"><span data-i18n="f_phone">Phone</span>
+                                <input id="poi-phone"></label>
+                        </div>
+                        <label class="field"><span data-i18n="f_website">Website</span>
+                            <input id="poi-website"></label>
+                        <div id="poi-schema-fields"></div>
+                        <div class="form-row">
+                            <label class="field" style="display:flex; align-items:center; gap:8px;">
+                                <input type="checkbox" id="poi-verified" checked>
+                                <span data-i18n="f_verified">Verified (checked on ground)</span>
+                            </label>
+                            <label class="field"><span data-i18n="f_notes">Notes</span>
+                                <input id="poi-notes"></label>
+                        </div>
+                        <input type="hidden" id="poi-edit-id">
+                        <div style="display:flex; gap:8px;">
+                            <button class="btn" id="poi-form-submit" onclick="savePoi()">💾 <span data-i18n="save">Save</span></button>
+                            <button class="btn flat" onclick="closePoiForm()" data-i18n="cancel">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ DAILY REPORTS ============ -->
+    <div class="tab-content" id="tab-reports">
+        <div class="card">
+            <h3>📋 <span data-i18n="daily_title">Daily Branch SITREPs</span></h3>
+            <div class="toolbar">
+                <select id="rep-branch-filter" style="min-width:160px;" onchange="loadReports()"></select>
+                <input type="date" id="rep-from" onchange="loadReports()">
+                <span class="muted">→</span>
+                <input type="date" id="rep-to" onchange="loadReports()">
+                <select id="rep-status-filter" onchange="loadReports()" style="min-width:130px;">
+                    <option value="">All statuses</option>
+                    <option value="submitted">Submitted</option>
+                    <option value="reviewed">Reviewed</option>
+                    <option value="discussed">Discussed</option>
+                </select>
+                <button class="btn" onclick="openReportForm()">+ <span data-i18n="new_report">New Report</span></button>
+            </div>
+            <ul class="list" id="report-list" style="max-height:640px; overflow-y:auto;"></ul>
+        </div>
+
+        <div class="card" id="report-form-wrap" style="display:none;">
+            <h3 id="report-form-title">Daily Report</h3>
+            <div class="form-row">
+                <label class="field"><span data-i18n="f_branch">Branch *</span>
+                    <select id="rep-branch"></select></label>
+                <label class="field"><span data-i18n="f_date">Report date</span>
+                    <input type="date" id="rep-date"></label>
+            </div>
+            <div class="form-row">
+                <label class="field"><span data-i18n="f_status">Branch status</span>
+                    <select id="rep-status">
+                        <option value="normal">Normal</option>
+                        <option value="alert">Alert</option>
+                        <option value="critical">Critical</option>
+                    </select></label>
+                <label class="field"><span data-i18n="f_needs">Needs / requests</span>
+                    <input id="rep-needs"></label>
+            </div>
+            <label class="field"><span data-i18n="f_summary">Summary</span>
+                <textarea id="rep-summary" rows="3"></textarea></label>
+            <div data-i18n="sections_hint" class="muted" style="margin-bottom:6px;">Section notes (click to expand and fill):</div>
+            <div id="rep-sections"></div>
+            <div style="display:flex; gap:8px; margin-top:10px;">
+                <button class="btn" onclick="saveReport()">💾 <span data-i18n="save">Save</span></button>
+                <button class="btn flat" onclick="closeReportForm()" data-i18n="cancel">Cancel</button>
+            </div>
+        </div>
+
+        <div class="card" id="report-view-wrap" style="display:none;">
+            <h3 id="report-view-title"></h3>
+            <div id="report-view-body"></div>
+        </div>
+    </div>
+
+    <!-- ============ FOLLOW-UPS ============ -->
+    <div class="tab-content" id="tab-followups">
+        <div class="card">
+            <h3>📌 <span data-i18n="followups_title">Follow-ups &amp; Decisions</span></h3>
+            <div class="toolbar">
+                <select id="fu-status-filter" onchange="loadFollowups()" style="min-width:150px;">
+                    <option value="">All statuses</option>
+                    <option value="open">Open</option>
+                    <option value="resolved">Resolved</option>
+                    <option value="closed">Closed</option>
+                </select>
+                <select id="fu-branch-filter" onchange="loadFollowups()" style="min-width:160px;"></select>
+                <button class="btn" onclick="openFollowupForm()">+ <span data-i18n="new_followup">New Follow-up</span></button>
+            </div>
+            <ul class="list" id="followup-list"></ul>
+        </div>
+
+        <div class="card" id="fu-form-wrap" style="display:none;">
+            <h3>New Follow-up</h3>
+            <div class="form-row">
+                <label class="field"><span data-i18n="f_branch">Branch</span>
+                    <select id="fu-branch"></select></label>
+                <label class="field"><span data-i18n="f_assigned">Assigned to</span>
+                    <input id="fu-assigned"></label>
+            </div>
+            <label class="field"><span data-i18n="f_item">Follow-up item *</span>
+                <textarea id="fu-item" rows="2"></textarea></label>
+            <div class="form-row">
+                <label class="field"><span data-i18n="f_due">Due date</span>
+                    <input type="date" id="fu-due"></label>
+                <label class="field"><span data-i18n="f_status">Status</span>
+                    <select id="fu-status">
+                        <option value="open">Open</option>
+                        <option value="resolved">Resolved</option>
+                        <option value="closed">Closed</option>
+                    </select></label>
+            </div>
+            <label class="field"><span data-i18n="f_decision">Decision / notes</span>
+                <textarea id="fu-decision" rows="2"></textarea></label>
+            <div style="display:flex; gap:8px;">
+                <button class="btn" onclick="saveFollowup()">💾 <span data-i18n="save">Save</span></button>
+                <button class="btn flat" onclick="closeFollowupForm()" data-i18n="cancel">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ ANALYSIS ============ -->
+    <div class="tab-content" id="tab-analysis">
+        <div id="analysis-forbidden" style="display:none;">
+            <div class="card empty" data-i18n="analysis_locked">AI analysis requires the Analyst or Admin role.</div>
+        </div>
+        <div id="analysis-main">
+            <div class="card">
+                <h3>🧠 <span data-i18n="ai_heading">AI Situation Digest</span></h3>
+                <div class="toolbar">
+                    <select id="ai-kind" style="min-width:200px;">
+                        <option value="all">All (POI categories + branches)</option>
+                        <option value="poi_category">POI categories only</option>
+                        <option value="branch">Branch reports only</option>
+                    </select>
+                    <select id="ai-cat" style="min-width:160px;"><option value="">All categories</option></select>
+                    <select id="ai-branch" style="min-width:160px;"><option value="">All branches</option></select>
+                    <select id="ai-days" style="min-width:120px;">
+                        <option value="7">Last 7 days</option>
+                        <option value="14">Last 14 days</option>
+                        <option value="30">Last 30 days</option>
+                    </select>
+                    <button class="btn" onclick="runAnalysis()" id="ai-run-btn">✨ <span data-i18n="run_analysis">Generate Summary</span></button>
+                </div>
+                <div class="muted" id="ai-status"></div>
+            </div>
+            <div class="card">
+                <h3>📊 <span data-i18n="digest_heading">Latest Digest</span></h3>
+                <div class="digest-grid" id="digest-grid"></div>
+                <div class="empty" id="digest-empty" style="display:none;" data-i18n="digest_empty">No AI summaries yet. Generate one above.</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <!-- Full-map location picker -->
+    <div class="modal-backdrop" id="pick-map-modal" style="display:none;">
+        <div class="modal-box">
+            <div class="modal-head">
+                <h3 data-i18n="pickmap_title">Pick Location on Map</h3>
+                <button class="btn small flat" onclick="closeMapPicker()">✕</button>
+            </div>
+            <div id="pick-map"></div>
+            <div class="modal-foot">
+                <span class="muted" id="pick-coords" data-i18n="pickmap_hint">Click the map to drop a pin</span>
+                <div style="display:flex; gap:8px;">
+                    <button class="btn flat" onclick="closeMapPicker()" data-i18n="cancel">Cancel</button>
+                    <button class="btn" onclick="useMapPicker()" data-i18n="use_location">Use this location</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        const authToken = localStorage.getItem('token');
+        let currentUser = null;
+        let branches = [];
+        let schemas = {};          // category -> [fields]
+        let currentCategory = '';
+        let currentPoiPage = 0;
+        let editingPoi = null;
+        let editingReport = null;
+
+        const translations = {
+            en: {
+                page_title: "Reports & Intelligence", page_sub: "POI Facilities | Daily SITREPs | Follow-ups | AI Analysis",
+                back_dash: "← Operations Dashboard",
+                tab_pois: "Facilities (POIs)", tab_daily: "Daily Reports", tab_followups: "Follow-ups", tab_analysis: "Analysis",
+                pois_title: "Facilities & Points of Interest", add_poi: "Add Facility", poi_list_hint: "Facilities (click to edit)",
+                f_name: "Name *", f_category: "Category *", f_lat: "Latitude", f_lng: "Longitude",
+                f_address: "Address", f_phone: "Phone", f_website: "Website", f_verified: "Verified (checked on ground)",
+                f_notes: "Notes", save: "Save", cancel: "Cancel", f_branch: "Branch", f_date: "Report date",
+                f_pickmap: "Pick location on full map", pickmap_title: "Pick Location on Map",
+                pickmap_hint: "Click the map to drop a pin", use_location: "Use this location",
+                f_status: "Branch status", f_needs: "Needs / requests", f_summary: "Summary",
+                sections_hint: "Section notes (click to expand and fill):",
+                daily_title: "Daily Branch SITREPs", new_report: "New Report",
+                followups_title: "Follow-ups & Decisions", new_followup: "New Follow-up",
+                f_assigned: "Assigned to", f_item: "Follow-up item *", f_due: "Due date", f_decision: "Decision / notes",
+                analysis_locked: "AI analysis requires the Analyst or Admin role.",
+                ai_heading: "AI Situation Digest", run_analysis: "Generate Summary", digest_heading: "Latest Digest",
+                digest_empty: "No AI summaries yet. Generate one above.",
+            },
+            ar: {
+                page_title: "التقارير والذكاء التحليلي", page_sub: "المرافق | تقارير يومية | متابعة | تحليل ذكي",
+                back_dash: "→ لوحة العمليات",
+                tab_pois: "المرافق", tab_daily: "التقارير اليومية", tab_followups: "المتابعة", tab_analysis: "التحليل",
+                pois_title: "المرافق ونقاط الاهتمام", add_poi: "إضافة مرفق", poi_list_hint: "المرافق (اضغط للتعديل)",
+                f_name: "الاسم *", f_category: "التصنيف *", f_lat: "خط العرض", f_lng: "خط الطول",
+                f_address: "العنوان", f_phone: "الهاتف", f_website: "الموقع", f_verified: "موثّق (تم التحقق ميدانياً)",
+                f_notes: "ملاحظات", save: "حفظ", cancel: "إلغاء", f_branch: "الفرع", f_date: "تاريخ التقرير",
+                f_pickmap: "تحديد الموقع على خريطة كاملة", pickmap_title: "تحديد الموقع على الخريطة",
+                pickmap_hint: "اضغط على الخريطة لوضع علامة", use_location: "استخدام هذا الموقع",
+                f_status: "حالة الفرع", f_needs: "الاحتياجات / الطلبات", f_summary: "الملخص",
+                sections_hint: "ملاحظات الأقسام (اضغط للتوسيع والتعبئة):",
+                daily_title: "التقارير اليومية للفروع", new_report: "تقرير جديد",
+                followups_title: "المتابعات والقرارات", new_followup: "متابعة جديدة",
+                f_assigned: "المسؤول", f_item: "عنصر المتابعة *", f_due: "موعد الاستحقاق", f_decision: "القرار / ملاحظات",
+                analysis_locked: "التحليل الذكي يتطلب دور محلل أو مدير.",
+                ai_heading: "الملخص الذكي للوضع", run_analysis: "إنشاء ملخص", digest_heading: "أحدث الملخصات",
+                digest_empty: "لا توجد ملخصات بعد. أنشئ ملخصاً أعلاه.",
+            }
+        };
+
+        function t(key) {
+            const lang = localStorage.getItem('lang') || 'ar';
+            const d = translations[lang] || translations.ar;
+            return d[key] || key;
+        }
+
+        function applyLang() {
+            const lang = localStorage.getItem('lang') || 'ar';
+            document.documentElement.lang = lang;
+            document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const k = el.getAttribute('data-i18n');
+                if (translations[lang][k]) el.textContent = translations[lang][k];
+            });
+        }
+
+        function toast(msg, type) {
+            const el = document.getElementById('toast');
+            el.textContent = msg;
+            el.className = 'toast ' + (type || '');
+            el.style.display = 'block';
+            clearTimeout(el._t);
+            el._t = setTimeout(() => el.style.display = 'none', 3600);
+        }
+
+        async function apiGet(endpoint) {
+            const res = await fetch(endpoint, { headers: { 'Authorization': `Bearer ${authToken}` } });
+            if (res.status === 401) { localStorage.removeItem('token'); localStorage.removeItem('user'); window.location.href = '/login'; return null; }
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            return res.json();
+        }
+        async function apiSend(method, endpoint, data) {
+            const res = await fetch(endpoint, {
+                method,
+                headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                body: data ? JSON.stringify(data) : undefined
+            });
+            if (res.status === 401) { localStorage.removeItem('token'); localStorage.removeItem('user'); window.location.href = '/login'; return null; }
+            if (!res.ok) {
+                let msg = `HTTP ${res.status}`;
+                try { const e = await res.json(); msg = e.error || msg; } catch (e) {}
+                throw new Error(msg);
+            }
+            return res.json();
+        }
+        const apiPost = (e, d) => apiSend('POST', e, d);
+        const apiPatch = (e, d) => apiSend('PATCH', e, d);
+        const apiDelete = (e) => apiSend('DELETE', e, null);
+
+        function switchTab(name, btn) {
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById('tab-' + name).classList.add('active');
+            if (name === 'facilities') loadPois();
+            if (name === 'reports') { loadBranches(); loadReports(); }
+            if (name === 'followups') { loadBranches(); loadFollowups(); }
+            if (name === 'analysis') loadDigest();
+        }
+
+        // ============ COMMON ============
+        async function loadUser() {
+            try {
+                const stored = localStorage.getItem('user');
+                if (stored) currentUser = JSON.parse(stored);
+                const data = await apiGet('/api/auth/me');
+                if (data) { currentUser = data; localStorage.setItem('user', JSON.stringify(data)); }
+                document.getElementById('user-name').textContent = currentUser.username || currentUser.user_id || 'user';
+                document.getElementById('user-role').textContent = currentUser.role || '';
+                const canAnalyze = ['admin', 'analyst'].includes(currentUser.role);
+                document.getElementById('analysis-main').style.display = canAnalyze ? '' : 'none';
+                document.getElementById('analysis-forbidden').style.display = canAnalyze ? 'none' : '';
+                const canPoi = ['admin', 'analyst', 'data_entry'].includes(currentUser.role);
+                document.getElementById('poi-add-btn').style.display = canPoi ? '' : 'none';
+            } catch (e) { console.error('load user', e); }
+        }
+
+        async function loadBranches(target) {
+            try {
+                const data = await apiGet('/api/branches');
+                if (Array.isArray(data)) branches = data;
+            } catch (e) {}
+            const opts = () => branches.map(b => `<option value="${b.id}">${b.name}${b.city ? ' - ' + b.city : ''}</option>`).join('');
+            ['rep-branch-filter', 'rep-branch', 'fu-branch', 'fu-branch-filter'].forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.innerHTML = (id.includes('filter') ? '<option value="">All branches</option>' : '') + opts();
+            });
+            // AI branch select (analysis)
+            const aiSel = document.getElementById('ai-branch');
+            if (aiSel) aiSel.innerHTML = '<option value="">All branches</option>' + opts();
+            if (!document.getElementById('rep-branch').value) loadReports();
+        }
+
+        // ============ FACILITIES ============
+        async function loadSchemas() {
+            try {
+                const data = await apiGet('/api/poi-schemas');
+                schemas = data || {};
+                const cats = Object.keys(schemas);
+                const filter = document.getElementById('poi-cat-filter');
+                filter.innerHTML = '<option value="">All categories</option>' +
+                    cats.map(c => `<option value="${c}">${label(c)}</option>`).join('');
+                const formCat = document.getElementById('poi-cat');
+                formCat.innerHTML = cats.map(c => `<option value="${c}">${label(c)}</option>`).join('');
+                const aiCat = document.getElementById('ai-cat');
+                aiCat.innerHTML = '<option value="">All categories</option>' +
+                    cats.map(c => `<option value="${c}">${label(c)}</option>`).join('');
+            } catch (e) { console.error('schemas', e); }
+        }
+
+        function label(cat) { return (cat || '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()); }
+
+        async function loadPois() {
+            const q = document.getElementById('poi-search').value.trim();
+            const cats = currentCategory ? currentCategory : '';
+            const list = document.getElementById('poi-list');
+            try {
+                const params = new URLSearchParams({ limit: '800' });
+                if (cats) params.set('category', cats);
+                if (q) params.set('q', q);
+                const data = await apiGet('/api/pois?' + params.toString());
+                if (!data || !data.length) { list.innerHTML = '<div class="empty">No facilities found</div>'; return; }
+                list.innerHTML = data.map(renderPoiRow).join('');
+            } catch (e) { list.innerHTML = '<div class="empty">Failed to load: ' + e.message + '</div>'; }
+        }
+
+        function renderPoiRow(p) {
+            const cd = p.category_data || {};
+            const schem = schemas[p.category] || [];
+            const firstVals = schem.slice(0, 3).map(f => {
+                const v = cd[f.field_key];
+                if (v === undefined || v === null || v === '') return null;
+                return `${f.field_label}: ${v}${f.unit ? ' ' + f.unit : ''}`;
+            }).filter(Boolean).join(' · ');
+            return `<li class="report-row" onclick="openPoiForm(${p.id})">
+                <div>
+                    <div class="item-title">${esc(p.name)} <span class="badge ${p.verified ? 'verified' : 'unverified'}">${p.verified ? '◉ verified' : '○ not verified'}</span>
+                        <span class="badge ${p.source === 'custom' ? 'custom' : 'osm'}">${p.source === 'custom' ? 'custom' : 'OSM'}</span></div>
+                    <div class="item-sub">${esc(label(p.category))}${p.address ? ' · ' + esc(p.address) : ''}${p.phone ? ' · ' + esc(p.phone) : ''}</div>
+                    ${firstVals ? '<div class="item-sub">' + esc(firstVals) + '</div>' : ''}
+                </div>
+                <div class="row-actions">
+                    ${!p.verified ? `<button class="btn small ghost" onclick="event.stopPropagation();verifyPoi(${p.id})">✓ verify</button>` : ''}
+                    <button class="btn small flat" onclick="event.stopPropagation();openPoiForm(${p.id})">✏️ edit</button>
+                </div>
+            </li>`;
+        }
+
+        const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+        async function verifyPoi(id) {
+            try { await apiPost(`/api/pois/${id}/verify`); toast('Facility verified ✓', 'ok'); loadPois(); }
+            catch (e) { toast(e.message, 'error'); }
+        }
+
+        let poiMap = null, poiMarker = null;
+        let pickerMap = null, pickerMarker = null, pickedLat = null, pickedLng = null;
+
+        function openMapPicker() {
+            document.getElementById('pick-map-modal').style.display = 'flex';
+            const lat = parseFloat(document.getElementById('poi-lat').value);
+            const lng = parseFloat(document.getElementById('poi-lng').value);
+            if (!window.L) { toast('Map library failed to load', 'error'); return; }
+            if (!pickerMap) {
+                pickerMap = L.map('pick-map').setView([lat || 28.5, lng || 17.5], lat && lng ? 13 : 6);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(pickerMap);
+                pickerMap.on('click', e => {
+                    pickedLat = e.latlng.lat;
+                    pickedLng = e.latlng.lng;
+                    if (pickerMarker) pickerMarker.setLatLng(e.latlng);
+                    else pickerMarker = L.marker(e.latlng).addTo(pickerMap);
+                    document.getElementById('pick-coords').textContent = `${pickedLat.toFixed(6)}, ${pickedLng.toFixed(6)}`;
+                });
+            }
+            pickerMap.setView([lat || 28.5, lng || 17.5], lat && lng ? 13 : 6);
+            if (lat && lng) {
+                if (pickerMarker) pickerMarker.setLatLng([lat, lng]);
+                else pickerMarker = L.marker([lat, lng]).addTo(pickerMap);
+                document.getElementById('pick-coords').textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+            }
+            setTimeout(() => pickerMap && pickerMap.invalidateSize(), 150);
+        }
+
+        function closeMapPicker() {
+            document.getElementById('pick-map-modal').style.display = 'none';
+            pickedLat = null;
+            pickedLng = null;
+        }
+
+        function useMapPicker() {
+            if (pickedLat === null || pickedLng === null) {
+                toast(t('pickmap_hint') || 'Click the map to drop a pin first', 'error');
+                return;
+            }
+            document.getElementById('poi-lat').value = pickedLat.toFixed(6);
+            document.getElementById('poi-lng').value = pickedLng.toFixed(6);
+            if (poiMap) {
+                if (poiMarker) poiMarker.setLatLng([pickedLat, pickedLng]);
+                else poiMarker = L.marker([pickedLat, pickedLng]).addTo(poiMap);
+                poiMap.setView([pickedLat, pickedLng], 13);
+            }
+            closeMapPicker();
+            toast('Location set ✓', 'ok');
+        }
+        function initPoiMap(lat, lng) {
+            if (!window.L) return;
+            if (!poiMap) {
+                poiMap = L.map('poi-map', { scrollWheelZoom: false }).setView([lat || 28.5, lng || 17.5], lat ? 13 : 6);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(poiMap);
+                poiMap.on('click', e => {
+                    if (poiMarker) poiMarker.setLatLng(e.latlng); else poiMarker = L.marker(e.latlng).addTo(poiMap);
+                    document.getElementById('poi-lat').value = e.latlng.lat.toFixed(6);
+                    document.getElementById('poi-lng').value = e.latlng.lng.toFixed(6);
+                });
+            } else {
+                poiMap.setView([lat || 28.5, lng || 17.5], lat ? 13 : 6);
+            }
+            if (lat && lng) {
+                if (poiMarker) poiMarker.setLatLng([lat, lng]); else poiMarker = L.marker([lat, lng]).addTo(poiMap);
+            }
+            setTimeout(() => poiMap && poiMap.invalidateSize(), 100);
+        }
+
+        function openPoiForm(id) {
+            const canEdit = currentUser && ['admin', 'analyst', 'data_entry'].includes(currentUser.role);
+            if (id === undefined) {
+                editingPoi = null;
+                if (!canEdit) return;
+                document.getElementById('poi-form-title').textContent = t('add_poi');
+                document.getElementById('poi-edit-id').value = '';
+                document.getElementById('poi-name').value = '';
+                document.getElementById('poi-address').value = '';
+                document.getElementById('poi-phone').value = '';
+                document.getElementById('poi-website').value = '';
+                document.getElementById('poi-notes').value = '';
+                document.getElementById('poi-lat').value = '';
+                document.getElementById('poi-lng').value = '';
+                document.getElementById('poi-verified').checked = true;
+                initPoiMap();
+                renderSchemaFields(currentCategory);
+                document.getElementById('poi-cat').disabled = !!currentCategory;
+            } else {
+                loadPoiForEdit(id);
+                return;
+            }
+            document.getElementById('poi-form-wrap').style.display = '';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        async function loadPoiForEdit(id) {
+            const p = await apiGet(`/api/pois/${id}`);
+            if (!p || p.error) return;
+            editingPoi = p;
+            document.getElementById('poi-form-title').textContent = esc(p.name);
+            document.getElementById('poi-edit-id').value = p.id;
+            document.getElementById('poi-name').value = p.name || '';
+            document.getElementById('poi-address').value = p.address || '';
+            document.getElementById('poi-phone').value = p.phone || '';
+            document.getElementById('poi-website').value = p.website || '';
+            document.getElementById('poi-notes').value = p.notes || '';
+            document.getElementById('poi-lat').value = p.lat;
+            document.getElementById('poi-lng').value = p.lng;
+            document.getElementById('poi-verified').checked = !!p.verified;
+            document.getElementById('poi-cat').value = p.category || '';
+            document.getElementById('poi-cat').disabled = false;
+            renderSchemaFields(p.category, p.category_data || {});
+            initPoiMap(p.lat, p.lng);
+            document.getElementById('poi-form-wrap').style.display = '';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function renderSchemaFields(category, values) {
+            const wrap = document.getElementById('poi-schema-fields');
+            if (!category) { wrap.innerHTML = '<div class="muted">Select a category to see its data fields.</div>'; return; }
+            const fields = schemas[category] || [];
+            if (!fields.length) { wrap.innerHTML = '<div class="muted">No extra fields for this category.</div>'; return; }
+            wrap.innerHTML = fields.map(f => {
+                const v = values[f.field_key];
+                const req = f.required ? ' *' : '';
+                const unit = f.unit ? ` (${f.unit})` : '';
+                const id = 'sf_' + f.field_key;
+                let control = '';
+                if (f.field_type === 'boolean') {
+                    control = `<label class="field" style="display:flex;align-items:center;gap:8px;">
+                        <input type="checkbox" id="${id}" ${v ? 'checked' : ''}><span>${esc(f.field_label)}${req}</span></label>`;
+                } else if (f.field_type === 'select') {
+                    const opts = [];
+                    try { opts.push(...(JSON.parse(f.options_json || '[]'))); } catch (e) {}
+                    control = `<label class="field"><span>${esc(f.field_label)}${req}${unit}</span>
+                        <select id="${id}"><option value="">—</option>${opts.map(o =>
+                            `<option value="${esc(o)}" ${String(v) === String(o) ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select></label>`;
+                } else if (f.field_type === 'textarea') {
+                    control = `<label class="field"><span>${esc(f.field_label)}${req}${unit}</span>
+                        <textarea id="${id}" rows="2">${esc(v != null ? v : '')}</textarea></label>`;
+                } else {
+                    const step = (f.field_type === 'percent' || f.field_type === 'number') ? ' step="any"' : '';
+                    control = `<label class="field"><span>${esc(f.field_label)}${req}${unit}</span>
+                        <input id="${id}" type="${f.field_type === 'number' || f.field_type === 'percent' ? 'number' : 'text'}"${step} value="${esc(v != null ? v : '')}"></label>`;
+                }
+                return control;
+            }).join('');
+        }
+
+        function collectSchemaData() {
+            const category = document.getElementById('poi-cat').value;
+            const out = {};
+            (schemas[category] || []).forEach(f => {
+                const el = document.getElementById('sf_' + f.field_key);
+                if (!el) return;
+                let v = el.value;
+                if (f.field_type === 'boolean') v = el.checked ? true : false;
+                else if (v === '') v = null;
+                if (v !== null && v !== false) out[f.field_key] = v;
+            });
+            return out;
+        }
+
+        async function savePoi() {
+            const id = document.getElementById('poi-edit-id').value;
+            const body = {
+                name: document.getElementById('poi-name').value.trim(),
+                category: document.getElementById('poi-cat').value,
+                lat: parseFloat(document.getElementById('poi-lat').value),
+                lng: parseFloat(document.getElementById('poi-lng').value),
+                address: document.getElementById('poi-address').value.trim(),
+                phone: document.getElementById('poi-phone').value.trim(),
+                website: document.getElementById('poi-website').value.trim(),
+                notes: document.getElementById('poi-notes').value.trim(),
+                verified: document.getElementById('poi-verified').checked,
+                category_data: collectSchemaData(),
+            };
+            try {
+                if (id) {
+                    const upd = { ...body };
+                    if (!Object.keys(collectSchemaData()).length && !Object.keys((editingPoi && editingPoi.category_data) || {}).length) upd.category_data = null;
+                    await apiPatch(`/api/pois/${id}`, upd);
+                    toast('Facility updated ✓', 'ok');
+                } else {
+                    await apiPost('/api/pois', body);
+                    toast('Facility added ✓', 'ok');
+                }
+                closePoiForm();
+                loadPois();
+            } catch (e) { toast(e.message, 'error'); }
+        }
+
+        function closePoiForm() { document.getElementById('poi-form-wrap').style.display = 'none'; }
+        function setPoiCategory(cat) { currentCategory = cat; loadPois(); }
+
+        // ============ DAILY REPORTS ============
+        const SECTIONS = ['weather', 'government', 'health', 'roads', 'security', 'other'];
+
+        function buildSections() {
+            const wrap = document.getElementById('rep-sections');
+            if (editingReport && editingReport.items) {
+                const bySection = {};
+                editingReport.items.forEach(it => { bySection[it.section] = it.content || ''; });
+                wrap.innerHTML = SECTIONS.map(s => sectionBox(s, bySection[s] || '')).join('') +
+                    sectionBox('key_incidents', bySection.key_incidents || '') +
+                    sectionBox('actions', bySection.actions || '');
+            } else {
+                wrap.innerHTML = SECTIONS.map(s => sectionBox(s, '')).join('') +
+                    sectionBox('key_incidents', '') + sectionBox('actions', '');
+            }
+        }
+
+        function sectionBox(section, content) {
+            return `<div class="section-box" id="sec_${section}">
+                <div class="sec-head" onclick="toggleSec('${section}')">${esc(label(section))}</div>
+                <div class="sec-body"><textarea class="sec-content" data-section="${section}" rows="2" style="width:100%;border:1px solid #ced0d9;border-radius:5px;padding:7px;">${esc(content)}</textarea></div></div>`;
+        }
+
+        function toggleSec(section) {
+            const box = document.getElementById('sec_' + section);
+            if (box) box.classList.toggle('open');
+        }
+
+        async function loadReports() {
+            const list = document.getElementById('report-list');
+            const branchId = document.getElementById('rep-branch-filter').value || '';
+            const from = document.getElementById('rep-from').value || '';
+            const to = document.getElementById('rep-to').value || '';
+            const status = document.getElementById('rep-status-filter').value || '';
+            try {
+                const params = new URLSearchParams();
+                if (branchId) params.set('branch_id', branchId);
+                if (from) params.set('from', from);
+                if (to) params.set('to', to);
+                if (status) params.set('status', status);
+                const data = await apiGet('/api/daily-reports?' + params.toString());
+                if (!data || !data.length) { list.innerHTML = '<div class="empty">No reports found.</div>'; return; }
+                const branchNames = {};
+                branches.forEach(b => branchNames[b.id] = b.name);
+                list.innerHTML = data.map(r => `<li class="report-row" onclick="viewReport(${r.id})">
+                    <div>
+                        <div class="item-title">${esc(branchNames[r.branch_id] || 'Branch ' + r.branch_id)}
+                            <span class="badge status-${esc(r.branch_status || 'normal')}">${esc(r.branch_status || '')}</span>
+                            <span class="badge ${r.status === 'submitted' ? 'status-resolved' : 'status-closed'}">${esc(r.status || '')}</span></div>
+                        <div class="item-sub">${esc(r.report_date)} · ${r.summary ? esc(r.summary.substring(0, 110)) + (r.summary.length > 110 ? '…' : '') : 'no summary'}</div>
+                    </div>
+                    <div class="muted">${r.items ? r.items.length : 0} sections</div>
+                </li>`).join('');
+            } catch (e) { list.innerHTML = '<div class="empty">Failed to load: ' + e.message + '</div>'; }
+        }
+
+        function openReportForm() {
+            editingReport = null;
+            document.getElementById('report-form-wrap').style.display = '';
+            document.getElementById('report-view-wrap').style.display = 'none';
+            document.getElementById('rep-date').value = new Date().toISOString().slice(0, 10);
+            document.getElementById('rep-status').value = 'normal';
+            document.getElementById('rep-summary').value = '';
+            document.getElementById('rep-needs').value = '';
+            buildSections();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function closeReportForm() { document.getElementById('report-form-wrap').style.display = 'none'; }
+
+        async function saveReport() {
+            const items = [];
+            SECTIONS.forEach(s => {
+                const el = document.querySelector(`.sec-content[data-section="${s}"]`);
+                if (el && el.value.trim()) items.push({ section: s, content: el.value.trim() });
+            });
+            ['key_incidents', 'actions'].forEach(s => {
+                const el = document.querySelector(`.sec-content[data-section="${s}"]`);
+                if (el && el.value.trim()) items.push({ section: s, content: el.value.trim() });
+            });
+            const body = {
+                branch_id: parseInt(document.getElementById('rep-branch').value),
+                report_date: document.getElementById('rep-date').value || new Date().toISOString().slice(0, 10),
+                branch_status: document.getElementById('rep-status').value,
+                summary: document.getElementById('rep-summary').value.trim(),
+                needs: document.getElementById('rep-needs').value.trim(),
+                items,
+            };
+            try {
+                await apiPost('/api/daily-reports', body);
+                toast('Daily report saved ✓', 'ok');
+                closeReportForm();
+                loadReports();
+            } catch (e) { toast(e.message, 'error'); }
+        }
+
+        async function viewReport(id) {
+            try {
+                const r = await apiGet('/api/daily-reports/' + id);
+                editingReport = r;
+                document.getElementById('report-form-wrap').style.display = 'none';
+                const wrap = document.getElementById('report-view-wrap');
+                wrap.style.display = '';
+                const branchName = (branches.find(b => b.id === r.branch_id) || {}).name || ('Branch ' + r.branch_id);
+                document.getElementById('report-view-title').textContent = `${branchName} — ${r.report_date}`;
+                const bySection = {};
+                (r.items || []).forEach(it => { bySection[it.section] = it.content; });
+                const sectionHtml = SECTIONS.concat(['key_incidents', 'actions']).filter(s => bySection[s]).map(s =>
+                    `<div class="section-box open"><div class="sec-head" style="background:#f7f8fb">${esc(label(s))}</div>
+                     <div class="sec-body">${esc(bySection[s])}</div></div>`).join('');
+                document.getElementById('report-view-body').innerHTML = `
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+                        <span class="badge status-${esc(r.branch_status || 'normal')}">${esc(r.branch_status || '')}</span>
+                        <span class="badge ${r.status === 'submitted' ? 'status-resolved' : 'status-closed'}">${esc(r.status || '')}</span>
+                        <button class="btn small flat" onclick="editReport(${r.id})">✏️ edit</button>
+                        <button class="btn small ghost" onclick="setReportStatus(${r.id},'reviewed')">mark reviewed</button>
+                        <button class="btn small ghost" onclick="setReportStatus(${r.id},'discussed')">mark discussed</button>
+                    </div>
+                    <div class="muted" style="margin-bottom:10px;">Summary</div>
+                    <div style="font-size:13.5px;margin-bottom:12px;">${esc(r.summary || '—')}</div>
+                    ${r.needs ? `<div class="muted" style="margin-bottom:4px;">Needs:</div><div style="font-size:13px;margin-bottom:12px;">${esc(r.needs)}</div>` : ''}
+                    ${sectionHtml || ''}
+                    ${(r.followups || []).length ? `<div class="muted" style="margin:12px 0 4px;">Follow-ups:</div>
+                        ${r.followups.map(f => `<div style="font-size:13px;margin:3px 0;">📌 ${esc(f.item)} <span class="badge status-${esc(f.status || 'open')}">${esc(f.status || '')}</span></div>`).join('')}` : ''}
+                `;
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } catch (e) { toast(e.message, 'error'); }
+        }
+
+        async function editReport(id) {
+            const r = await apiGet('/api/daily-reports/' + id);
+            editingReport = r;
+            document.getElementById('report-form-wrap').style.display = '';
+            document.getElementById('report-view-wrap').style.display = 'none';
+            document.getElementById('rep-branch').value = r.branch_id;
+            document.getElementById('rep-date').value = r.report_date;
+            document.getElementById('rep-status').value = r.branch_status || 'normal';
+            document.getElementById('rep-summary').value = r.summary || '';
+            document.getElementById('rep-needs').value = r.needs || '';
+            buildSections();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        async function setReportStatus(id, status) {
+            try { await apiPatch('/api/daily-reports/' + id, { status }); toast('Status updated ✓', 'ok'); loadReports(); viewReport(id); }
+            catch (e) { toast(e.message, 'error'); }
+        }
+
+        // ============ FOLLOW-UPS ============
+        async function loadFollowups() {
+            const list = document.getElementById('followup-list');
+            const status = document.getElementById('fu-status-filter').value || '';
+            const branchId = document.getElementById('fu-branch-filter').value || '';
+            try {
+                const params = new URLSearchParams();
+                if (status) params.set('status', status);
+                if (branchId) params.set('branch_id', branchId);
+                const data = await apiGet('/api/followups?' + params.toString());
+                if (!data || !data.length) { list.innerHTML = '<div class="empty">No follow-ups found.</div>'; return; }
+                const branchNames = {};
+                branches.forEach(b => branchNames[b.id] = b.name);
+                list.innerHTML = data.map(f => `<li>
+                    <div>
+                        <div class="item-title">${esc(f.item)}
+                            <span class="badge status-${esc(f.status || 'open')}">${esc(f.status || 'open')}</span></div>
+                        <div class="item-sub">${esc(branchNames[f.branch_id] || 'Branch ' + f.branch_id)}${f.due_date ? ' · due ' + esc(f.due_date) : ''}${f.assigned_to ? ' · ' + esc(f.assigned_to) : ''}</div>
+                        ${f.decision ? '<div class="item-sub" style="color:#b7791f;">Decision: ' + esc(f.decision) + '</div>' : ''}
+                    </div>
+                    <div class="followup-actions">
+                        ${f.status === 'open' ? `<button class="btn small ghost" onclick="setFollowupStatus(${f.id},'resolved','Fu resolved')">✓ resolve</button>` : ''}
+                        ${f.status !== 'closed' ? `<button class="btn small flat" onclick="setFollowupStatus(${f.id},'closed','Fu closed')">✕ close</button>` : ''}
+                    </div>
+                </li>`).join('');
+            } catch (e) { list.innerHTML = '<div class="empty">Failed to load: ' + e.message + '</div>'; }
+        }
+
+        function openFollowupForm() {
+            document.getElementById('fu-form-wrap').style.display = '';
+            document.getElementById('fu-item').value = '';
+            document.getElementById('fu-assigned').value = '';
+            document.getElementById('fu-due').value = '';
+            document.getElementById('fu-decision').value = '';
+            document.getElementById('fu-status').value = 'open';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        function closeFollowupForm() { document.getElementById('fu-form-wrap').style.display = 'none'; }
+
+        async function saveFollowup() {
+            const body = {
+                branch_id: parseInt(document.getElementById('fu-branch').value || '0') || null,
+                item: document.getElementById('fu-item').value.trim(),
+                assigned_to: document.getElementById('fu-assigned').value.trim() || null,
+                due_date: document.getElementById('fu-due').value || null,
+                status: document.getElementById('fu-status').value,
+                decision: document.getElementById('fu-decision').value.trim() || null,
+            };
+            if (!body.item) { toast('Item text is required', 'error'); return; }
+            if (!body.branch_id) { toast('Branch is required', 'error'); return; }
+            try { await apiPost('/api/followups', body); toast('Follow-up created ✓', 'ok'); closeFollowupForm(); loadFollowups(); }
+            catch (e) { toast(e.message, 'error'); }
+        }
+
+        async function setFollowupStatus(id, status, note) {
+            try { await apiPatch('/api/followups/' + id, { status }); toast(note + ' ✓', 'ok'); loadFollowups(); }
+            catch (e) { toast(e.message, 'error'); }
+        }
+
+        // ============ ANALYSIS ============
+        async function runAnalysis() {
+            const kind = document.getElementById('ai-kind').value;
+            const body = {
+                kind,
+                period_days: parseInt(document.getElementById('ai-days').value),
+            };
+            const cat = document.getElementById('ai-cat').value;
+            if (cat && kind !== 'branch') body.category = cat;
+            const branchId = document.getElementById('ai-branch').value;
+            if (branchId && kind !== 'poi_category') body.branch_id = parseInt(branchId);
+            const btn = document.getElementById('ai-run-btn');
+            const status = document.getElementById('ai-status');
+            btn.disabled = true;
+            status.innerHTML = '<span class="spinner"></span> Generating summary with AI (cloud)…';
+            try {
+                const job = await apiPost('/api/analysis/summarize', body);
+                const jobId = job.job_id;
+                const deadline = Date.now() + 12 * 60 * 1000;
+                while (Date.now() < deadline) {
+                    await new Promise(r => setTimeout(r, 5000));
+                    const state = await apiGet('/api/analysis/jobs/' + jobId);
+                    if (state.status === 'success') {
+                        const n = (state.result && state.result.summaries || []).length;
+                        status.innerHTML = `✅ Done — ${n} summary(ies) saved (model: ${state.result.model || 'n/a'}).`;
+                        loadDigest();
+                        break;
+                    }
+                    if (state.status === 'error') {
+                        status.innerHTML = '❌ ' + (state.error || 'AI job failed');
+                        break;
+                    }
+                }
+            } catch (e) { status.innerHTML = '❌ ' + e.message; }
+            btn.disabled = false;
+        }
+
+        async function loadDigest() {
+            try {
+                const data = await apiGet('/api/analysis/digest?days=30');
+                const grid = document.getElementById('digest-grid');
+                const empty = document.getElementById('digest-empty');
+                if (!data || !data.length) { grid.innerHTML = ''; empty.style.display = ''; return; }
+                empty.style.display = 'none';
+                grid.innerHTML = data.map(row => {
+                    const s = row.summary || {};
+                    const cat = (s.category && s.category !== null) ? label(s.category) : (s.branch_id ? 'Branch' : 'General');
+                    const risk = s.risk_level || 'unknown';
+                    return `<div class="digest-card">
+                        <h4><span>${esc(cat)}</span><span class="badge risk-${esc(risk)}">${esc(risk)}</span></h4>
+                        <div class="one-liner">${esc(s.one_liner || s.summary || '')}</div>
+                        ${(s.counts && s.counts.total) ? `<div class="muted">${s.counts.total} items</div>` : ''}
+                        ${(s.key_issues && s.key_issues.length) ? `<div class="issues"><strong>Key issues</strong><ul>${s.key_issues.slice(0, 5).map(i => `<li>${esc(typeof i === 'string' ? i : JSON.stringify(i))}</li>`).join('')}</ul></div>` : ''}
+                        ${(s.suggested_actions && s.suggested_actions.length) ? `<div class="actions"><strong>Suggested actions</strong><ul>${s.suggested_actions.slice(0, 4).map(i => `<li>${esc(typeof i === 'string' ? i : JSON.stringify(i))}</li>`).join('')}</ul></div>` : ''}
+                        <div class="meta">${esc(row.period_start || '')} → ${esc(row.period_end || '')} · ${esc(row.model || '')} · ${esc(s.kind || row.kind || '')}</div>
+                    </div>`;
+                }).join('');
+            } catch (e) { console.error('digest', e); }
+        }
+
+        // ============ INIT ============
+        (async function init() {
+            applyLang();
+            if (!authToken) { window.location.href = '/login'; return; }
+            await loadUser();
+            await loadSchemas();
+            await loadBranches();
+            loadPois();
+            loadDigest();
+        })();
+    </script>
+</body>
+</html>

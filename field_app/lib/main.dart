@@ -7,6 +7,7 @@ import 'services/team_service.dart';
 import 'services/incident_service.dart';
 import 'services/route_service.dart';
 import 'services/location_service.dart';
+import 'services/poi_service.dart';
 
 void main() {
   runApp(const FieldApp());
@@ -23,6 +24,7 @@ class FieldApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => TeamService()),
         ChangeNotifierProvider(create: (_) => IncidentService()),
         ChangeNotifierProvider(create: (_) => RouteService()),
+        ChangeNotifierProvider(create: (_) => PoiService()),
         ChangeNotifierProxyProvider<AuthService, LocationService>(
           create: (_) => LocationService(AuthService()),
           update: (_, auth, __) => LocationService(auth),

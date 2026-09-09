@@ -111,4 +111,25 @@ class ApiService {
       rethrow;
     }
   }
+  
+  /// Auto-detect the branch covering a GPS point (no auth required).
+  /// Returns null when the location is not resolvable.
+  static Future<Map<String, dynamic>?> geoLocateBranch(double lat, double lng) async {
+    try {
+      final uri = Uri.parse('$baseUrl/api/branches/geo-locate')
+          .replace(queryParameters: {'lat': '$lat', 'lng': '$lng'});
+      final response = await http.get(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+      ).timeout(const Duration(seconds: 10));
+      
+      if (response.statusCode == 200) {
+        return json.decode(response.body) as Map<String, dynamic>;
+      }
+      return null;
+    } catch (e) {
+      print('API Geo-Locate Error: $e');
+      return null;
+    }
+  }
 }

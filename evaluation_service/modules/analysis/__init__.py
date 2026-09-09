@@ -1,0 +1,1 @@
+"""Analysis / AI summarization module for the Reports & Intelligence add-on."""
