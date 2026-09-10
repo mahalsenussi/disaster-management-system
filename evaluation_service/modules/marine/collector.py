@@ -92,6 +92,8 @@ class MarineCollector:
                 maximum_latitude=bbox['max_lat'],
                 start_datetime=start,
                 end_datetime=now,
+                username=self.copernicus_username,
+                password=self.copernicus_password,
             )
             import xarray as xr
             ds = xr.open_dataset(result.file_path)
@@ -104,6 +106,8 @@ class MarineCollector:
                 for j, lon in enumerate(lons):
                     u = float(uo[i, j])
                     v = float(vo[i, j])
+                    if math.isnan(u) or math.isnan(v):
+                        continue
                     rows.append(self._grid_row(now, float(lat), float(lon), u, v))
             return rows
         except Exception as e:
@@ -176,6 +180,8 @@ class MarineCollector:
                 maximum_latitude=bbox['max_lat'],
                 start_datetime=start,
                 end_datetime=now,
+                username=self.copernicus_username,
+                password=self.copernicus_password,
             )
             import xarray as xr
             ds = xr.open_dataset(result.file_path)
@@ -185,11 +191,14 @@ class MarineCollector:
             rows = []
             for i, lat in enumerate(lats):
                 for j, lon in enumerate(lons):
+                    z = float(zos[i, j])
+                    if math.isnan(z):
+                        continue
                     rows.append({
                         'time': now.isoformat(),
                         'lat': round(float(lat), 4),
                         'lon': round(float(lon), 4),
-                        'zos': round(float(zos[i, j]), 4),
+                        'zos': round(z, 4),
                         'src': SSH_DATASET,
                     })
             return rows
