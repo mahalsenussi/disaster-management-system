@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Libya Weather & Sea Level Monitor</title>
+<link href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-rtl-text/v0.2.3/mapbox-gl-rtl-text.js"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@5.9.0/dist/maplibre-gl.css">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,sans-serif;background:#0b0e17;color:#e8eaf0;overflow:hidden}
+body{display:flex}
+#map{flex:1;height:100%}
+.sidebar{width:320px;background:#121524;border-right:1px solid #1f2437;display:flex;flex-direction:column;overflow:hidden}
+.sb-head{padding:16px 16px 12px;border-bottom:1px solid #1f2437;flex-shrink:0}
+.sb-head h1{font-size:17px;color:#45d0ff;margin-bottom:2px}
+.sb-head p{font-size:11px;color:#7a8196}
+.sb-body{flex:1;overflow-y:auto;padding:12px 14px}
+.section-title{font-size:11px;letter-spacing:1px;color:#5b6378;margin:14px 0 8px;text-transform:uppercase}
+.layer-row{display:flex;align-items:center;justify-content:space-between;padding:7px 8px;border-radius:8px;background:#181c2e;margin-bottom:6px;cursor:pointer;border:1px solid transparent;transition:all .15s}
+.layer-row:hover{border-color:#2a3152}
+.layer-row span{font-size:13px;color:#cfd4e3}
+.switch{position:relative;width:36px;height:20px;background:#2a3152;border-radius:10px;transition:background .2s;flex-shrink:0}
+.switch.on{background:#0ea5e9}
+.switch::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;background:#fff;border-radius:50%;transition:left .2s}
+.switch.on::after{left:18px}
+.btn{width:100%;padding:9px;border:none;border-radius:8px;background:#0ea5e9;color:#04121f;font-weight:700;font-size:13px;cursor:pointer;margin-top:6px}
+.btn.secondary{background:#232a45;color:#cfd4e3}
+.btn.small{width:auto;padding:5px 10px;font-size:11px;margin:0}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.status{font-size:11px;color:#5b6378;margin-top:8px;line-height:1.5}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700}
+.badge.LOW{background:#103018;color:#4ade80}
+.badge.MEDIUM{background:#322a10;color:#fbbf24}
+.badge.HIGH{background:#3a1410;color:#fb7185}
+.badge.EXTREME{background:#4a0e14;color:#f87171}
+.alert{padding:8px 10px;border-radius:8px;background:#180f16;border-left:3px solid #fb7185;margin-bottom:6px;font-size:12px}
+.alert .a-zone{font-weight:700;color:#fda4af}
+.alert .a-score{float:right;color:#f87171;font-weight:700}
+.legend{font-size:11px;margin-top:8px;line-height:1.6}
+.legend .sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:middle}
+.map-legend{position:absolute;left:16px;bottom:16px;background:rgba(15,18,32,.85);border:1px solid #2a3152;border-radius:8px;padding:10px 12px;font-size:11px;color:#b9c0d4;z-index:2;max-width:220px;backdrop-filter:blur(4px)}
+.map-legend h4{font-size:11px;color:#45d0ff;margin-bottom:6px}
+.grad{height:10px;width:170px;border-radius:4px;background:linear-gradient(90deg,#123f8f,#0ea5e9,#facc15,#fb7185,#e11d48);margin:4px 0 2px}
+.maplibrepopup .detail{font-size:12px;line-height:1.5}
+.maplibrepopup .row{display:flex;justify-content:space-between;border-bottom:1px solid #1f2437;padding:3px 0}
+.maplibrepopup .row span:first-child{color:#7a8196}
+#toast{position:fixed;bottom:20px;right:20px;background:#0ea5e9;color:#04121f;padding:10px 16px;border-radius:8px;font-size:13px;font-weight:600;display:none;z-index:100;box-shadow:0 4px 20px rgba(0,0,0,.5)}
+.pulse{animation:pulse 1.2s infinite}
+@keyframes pulse{0%{opacity:1}50%{opacity:.35}100%{opacity:1}}
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="sb-head">
+    <h1>🌊 Libya Weather & Sea Level Monitor</h1>
+    <p>CMEMS · IOC · OpenWeatherMap · AI risk</p>
+  </div>
+  <div class="sb-body">
+
+    <div class="section-title">Live Map Layers</div>
+    <div class="layer-row" data-layer="currents"><span>🌪 Sea surface currents</span><div class="switch on"></div></div>
+    <div class="layer-row" data-layer="sealevel"><span>📈 Sea surface height (zos)</span><div class="switch on"></div></div>
+    <div class="layer-row" data-layer="waves"><span>🌊 Wave state (VHM0)</span><div class="switch"></div></div>
+    <div class="layer-row" data-layer="vesselrisk"><span>🚤 Vessel-capsize risk</span><div class="switch on"></div></div>
+    <div class="layer-row" data-layer="weather"><span>🌡 Weather stations</span><div class="switch"></div></div>
+    <div class="layer-row" data-layer="zones"><span>🇱🇾 Monitoring corridor</span><div class="switch on"></div></div>
+
+    <div class="section-title">Data Collection</div>
+    <button id="btnCollect" class="btn">Collect now (CMEMS/mock)</button>
+    <button id="btnRiskCollect" class="btn secondary" style="margin-top:6px">Recompute vessel risk</button>
+    <button id="btnEval" class="btn secondary" style="margin-top:6px">🤖 AI evaluate hottest zone</button>
+    <div id="status" class="status">Fetching data…</div>
+
+    <div class="section-title">🚨 Marine Alerts</div>
+    <div id="alerts"><div class="status">No risk zones evaluated yet.</div></div>
+
+    <div class="section-title">Marine Zones</div>
+    <div id="zonelist" class="status"></div>
+  </div>
+</div>
+
+<div id="map"></div>
+<div class="map-legend" id="mapLegend">
+  <h4>Composite vessel risk</h4>
+  <div class="grad"></div>
+  <div>LOW <span id="lg">—</span></div>
+</div>
+<div id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5.9.0/dist/maplibre-gl.js"></script>
+<script>
+const map = new maplibregl.Map({
+  container: 'map',
+  style: {
+    version: 8,
+    sources: {
+      basemap: { type: 'raster', tiles: ['https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'], tileSize: 256 },
+      land: { type: 'raster', tiles: ['https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'], tileSize: 256 }
+    },
+    layers: [
+      { id: 'basemap', type: 'raster', source: 'basemap', minzoom: 1, maxzoom: 14 },
+      { id: 'land-overlay', type: 'raster', source: 'land', paint: { 'raster-opacity': 0 } }
+    ]
+  },
+  center: [18.0, 32.5],
+  zoom: 6,
+  attributionControl: false
+});
+
+const LAYERS = {
+  currents: { geojson: null, layerIds: ['cur-dir'] },
+  sealevel: { geojson: null, layerIds: ['sl-heat', 'sl-heat-fill'] },
+  waves: { geojson: null, layerIds: ['wave-circle'] },
+  vesselrisk: { geojson: null, layerIds: ['vr-heat', 'vr-circle'] },
+  weather: { geojson: null, layerIds: ['w-circle'] },
+  zones: { geojson: null, layerIds: ['zone-fill', 'zone-line'] }
+};
+
+// ---------------------------------------------------------------- current grid
+let currentsGrid = null;
+const strokeColors = ['#0ea5e9', '#22d3ee', '#4ade80', '#facc15', '#fb923c', '#fb7185', '#e11d48'];
+
+// Build a LineString for every N-th grid point in the direction of (uo,vo);
+// the arrow layer is decimated to keep GeoJSON lean.
+function currentsAsArrows(data){
+  if(!data || !data.length) return {type:'FeatureCollection',features:[]};
+  const feats=[];
+  for(let i=0;i<data.length;i+=3){
+    const r=data[i]; const u=r.uo||0, v=r.vo||0;
+    const sp=Math.hypot(u,v); if(sp<1e-4) continue;
+    const dLon=u/(sp+1e-9)*0.25, dLat=v/(sp+1e-9)*0.25;
+    feats.push({type:'Feature',properties:{speed:sp,u:u,v:v},
+      geometry:{type:'LineString',coordinates:[[r.lon,r.lat],[r.lon+dLon,r.lat+dLat]]}});
+  }
+  return {type:'FeatureCollection',features:feats};
+}
+
+// ---------------------------------------------------------------- simple layers
+function projectToGeoJSON(points, propsFn){
+  return { type:'FeatureCollection', features: points.map(p=>({ type:'Feature',
+    geometry:{ type:'Point', coordinates:[p.lon,p.lat] }, properties: propsFn(p) })) };
+}
+
+function addPointLayers(){
+  map.addSource('cur-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+  map.addLayer({id:'cur-dir',type:'line',source:'cur-src',
+    paint:{'line-width':{stops:[[3,0.8],[9,2]]},
+      'line-color':['interpolate',['linear'],['get','speed'],
+        0,'#0ea5e9',0.2,'#22d3ee',0.4,'#4ade80',0.6,'#facc15',0.8,'#fb7185',1,'#e11d48'],
+      'line-opacity':0.85}});
+  map.addSource('sl-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+  map.addLayer({id:'sl-heat',type:'heatmap',source:'sl-src',
+    paint:{ 'heatmap-weight':{property:'zos',stops:[[-0.5,0.2],[0,1],[0.5,0.2]]},
+            'heatmap-intensity':0.6,'heatmap-color':['interpolate',['linear'],['heatmap-density'],
+              0,'#123f8f',0.35,'#0ea5e9',0.6,'#facc15',0.85,'#fb7185',1,'#e11d48'],
+            'heatmap-radius':12,'heatmap-opacity':['interpolate',['linear'],['zoom'],4,0.7,9,0.35] }});
+  map.addSource('wave-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+  map.addLayer({id:'wave-circle',type:'circle',source:'wave-src',
+    paint:{ 'circle-radius':{stops:[[3,5],[9,13]]}, 'circle-color':{property:'wave_height',
+      stops:[[0,'#123f8f'],[1,'#0ea5e9'],[2,'#facc15'],[3.5,'#fb7185'],[5,'#e11d48']]},
+      'circle-opacity':0.85, 'circle-stroke-width':1, 'circle-stroke-color':'rgba(255,255,255,.4)' }});
+  map.addSource('vr-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+  map.addLayer({id:'vr-heat',type:'heatmap',source:'vr-src',
+    paint:{ 'heatmap-weight':{property:'risk_score',stops:[[0,0],[1,1]]},
+            'heatmap-intensity':0.8,'heatmap-color':['interpolate',['linear'],['heatmap-density'],
+              0,'rgba(18,63,143,0.1)',0.4,'#0ea5e9',0.65,'#facc15',0.9,'#fb7185',1,'#e11d48'],
+            'heatmap-radius':40,'heatmap-opacity':0.5 }});
+  map.addLayer({id:'vr-circle',type:'circle',source:'vr-src',
+    paint:{ 'circle-radius':{stops:[[3,7],[9,18]]}, 'circle-color':{property:'danger',
+      type:'categorical', stops:[['LOW','#22c55e'],['MEDIUM','#facc15'],['HIGH','#fb923c'],['EXTREME','#e11d48']]},
+      'circle-opacity':0.9,'circle-stroke-width':2,'circle-stroke-color':'#ffffff' }});
+  map.addSource('w-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+  map.addLayer({id:'w-circle',type:'circle',source:'w-src',
+    paint:{ 'circle-radius':8,'circle-color':'#45d0ff','circle-stroke-width':2,'circle-stroke-color':'#ffffff',
+      'circle-opacity':{property:'temperature', stops:[[0,0.4],[20,0.7],[40,1]]} }});
+  map.addLayer({id:'w-label',type:'symbol',source:'w-src',
+    layout:{'text-field':['get','city'],'text-size':11,'text-offset':[0,1.2]},
+    paint:{'text-color':'#ffffff','text-halo-color':'#111','text-halo-width':1}});
+}
+
+function addZoneLayers(){
+  const corridor = { type:'FeatureCollection', features:[{
+    type:'Feature', properties:{name:'Monitoring corridor'}, geometry:{ type:'Polygon',
+    coordinates:[[[9.0,32.0],[9.2,33.4],[11,34.5],[13.5,35.4],[17,35.8],[20,36.3],[24,36.8],[26,35.2],[24.5,32.5],[21,31.5],[18,30.5],[14,31.3],[10,31.0],[9.0,32.0]]]}}] };
+  map.addSource('zone-src',{type:'geojson',data:corridor});
+  map.addLayer({id:'zone-fill',type:'fill',source:'zone-src',
+    paint:{'fill-color':'rgba(14,165,233,0.08)','fill-outline-color':'rgba(14,165,233,0.5)'}});
+  map.addLayer({id:'zone-line',type:'line',source:'zone-src',
+    paint:{'line-color':'#45d0ff','line-width':1.5,'line-dasharray':[3,2]}});
+}
+
+// ---------------------------------------------------------------- popups
+let popup=null;
+function showPopup(feature, html){
+  if(popup) popup.remove();
+  popup=new maplibregl.Popup({maxWidth:'300px',className:'maplibrepopup'})
+    .setLngLat(feature.geometry.coordinates).setHTML(html).addTo(map);
+}
+
+map.on('load', ()=>{
+  addPointLayers(); addZoneLayers(); mapReadyThrown=true;
+  map.addSource('sl-heat-fill-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+  map.addLayer({id:'sl-heat-fill',type:'fill',source:'sl-heat-fill-src',paint:{'fill-opacity':0}});
+  loadAll();
+  setInterval(loadAll, 300000); // 5 min auto-refresh
+});
+
+// ---------------------------------------------------------------- layer toggles
+document.querySelectorAll('.layer-row').forEach(row=>{
+  row.addEventListener('click', ()=>{
+    const sw=row.querySelector('.switch'); const lyr=row.dataset.layer;
+    sw.classList.toggle('on'); applyLayer(lyr, sw.classList.contains('on'));
+  });
+});
+function applyLayer(lyr, on){
+  const ids=(LAYERS[lyr]&&LAYERS[lyr].layerIds)||[];
+  ids.forEach(id=>{ if(map.getLayer(id)) map.setLayoutProperty(id,'visibility', on?'visible':'none'); });
+  if(lyr==='weather'){ map.setLayoutProperty('w-label','visibility', on?'visible':'none'); }
+}
+
+// ---------------------------------------------------------------- data load
+const CITIES=['Tripoli','Benghazi','Misrata','Sabha','Bayda','Ghadames','Tobruk','Zawiya'];
+const COASTAL=['Tripoli','Benghazi','Misrata','Derna','Sirte','Tobruk','Zawiya','Al Khums'];
+
+async function loadAll(){
+  await Promise.all([loadCurrents(), loadSSH(), loadRisk(), loadWaves(), loadWeather(), loadZones()]);
+}
+
+async function loadCurrents(){
+  const r=await fetch('/api/marine/currents'); const j=await r.json();
+  if(j.status!=='success'){ setStatus(j.message||'No currents'); return; }
+  currentsGrid=currentsAsArrows(j.data);
+  map.getSource('cur-src').setData(currentsGrid);
+  setStatus(`Currents: ${j.data.length} pts (${j.source||'mock'})`);
+  refreshLegend(j.data);
+}
+async function loadSSH(){
+  const r=await fetch('/api/marine/ssh'); const j=await r.json();
+  if(j.status!=='success') return;
+  const geojson=projectToGeoJSON(j.data, p=>({zos:p.zos||0}));
+  map.getSource('sl-src').setData(geojson);
+  setStatus2(`SSH: ${j.data.length} pts`);
+}
+async function loadRisk(){
+  const r=await fetch('/api/marine/risk'); const j=await r.json();
+  if(j.status!=='success'){ return; }
+  const geojson=projectToGeoJSON(j.data, p=>({risk_score:p.risk_score||0,danger:p.danger_level||'LOW',zone:p.zone||''}));
+  map.getSource('vr-src').setData(geojson);
+  renderAlerts(j.data);
+}
+async function loadWaves(){
+  const feats=[];
+  for(const loc of COASTAL){
+    try{ const r=await fetch(`/api/coastal/${encodeURIComponent(loc)}`); const j=await r.json();
+      if(j.status==='success'&&j.data){ const d=j.data;
+        feats.push({type:'Feature',properties:{wave_height:d.wave_height||0,wave_period:d.wave_period||0,
+          name:loc},geometry:{type:'Point',coordinates:[coastalCoords[loc].lng,coastalCoords[loc].lat]}}); }
+    }catch(e){}
+  }
+  map.getSource('wave-src').setData({type:'FeatureCollection',features:feats});
+}
+const coastalCoords={ 'Tripoli':{lat:32.887,lng:13.191},'Benghazi':{lat:32.116,lng:20.066},
+ 'Misrata':{lat:32.375,lng:15.094},'Tobruk':{lat:32.083,lng:23.918},'Zawiya':{lat:32.757,lng:12.721},
+ 'Al Khums':{lat:32.650,lng:14.267},'Derna':{lat:32.755,lng:22.633},'Sirte':{lat:31.200,lng:16.583},
+ 'Zuwara':{lat:32.93,lng:12.09},'Sabratha':{lat:32.80,lng:12.48},'Sabha':{lat:27.03,lng:14.43},
+ 'Bayda':{lat:32.76,lng:21.76},'Ghadames':{lat:30.13,lng:9.50}};
+async function loadWeather(){
+  const feats=[];
+  for(const city of CITIES){
+    try{ const r=await fetch(`/api/weather/${encodeURIComponent(city)}`); const j=await r.json();
+      if(j.status==='success'&&j.data){ const d=j.data;
+        feats.push({type:'Feature',properties:{city:city,temperature:d.temperature||0,humidity:d.humidity||0,
+          wind:d.wind_speed||0},geometry:{type:'Point',coordinates:[coastalCoords[city]?.lng||17.0,coastalCoords[city]?.lat||32.0]}}); }
+    }catch(e){}
+  }
+  map.getSource('w-src').setData({type:'FeatureCollection',features:feats});
+}
+async function loadZones(){
+  const r=await fetch('/api/marine/zones'); const j=await r.json();
+  const list=document.getElementById('zonelist');
+  if(j.status!=='success'){ list.textContent='No zones configured'; return; }
+  list.innerHTML=j.data.map(z=>`<div style="margin-bottom:2px">📍 ${z.zone} — ${z.lat.toFixed(2)}, ${z.lon.toFixed(2)}</div>`).join('');
+}
+function renderAlerts(rows){
+  const box=document.getElementById('alerts');
+  if(!rows||!rows.length){ box.innerHTML='<div class="status">No risk zones evaluated yet.</div>'; return; }
+  const hot=rows.filter(r=>['HIGH','EXTREME'].includes(r.danger_level));
+  box.innerHTML=(hot.length? hot:rows.slice(0,3)).map(r=>
+    `<div class="alert"><span class="a-score">${(r.risk_score*100).toFixed(0)}%</span>
+     <span class="a-zone">${r.zone||'Unknown'}</span>
+     <div style="margin-top:4px">Hs ${r.wave_height}m · Tp ${r.wave_period}s · W ${r.wind_speed} m/s · Cur ${r.current_speed?r.current_speed.toFixed(2):'—'} m/s</div>
+     <div style="margin-top:3px"><span class="badge ${r.danger_level}">${r.danger_level}</span></div></div>`).join('')||
+    '<div class="status">All zones LOW.</div>';
+}
+function refreshLegend(data){
+  const speeds=data.map(d=>d.speed||0).filter(Boolean);
+  if(speeds.length){ const mx=Math.max(...speeds); document.getElementById('lg').textContent=`↔ max ${mx.toFixed(2)} m/s`; }
+}
+function setStatus(s){ document.getElementById('status').innerHTML=s+'<br><span id="st2"></span>'; }
+function setStatus2(s){ const el=document.getElementById('st2'); if(el) el.textContent=s; }
+
+// ---------------------------------------------------------------- collect buttons
+const btnCollect=document.getElementById('btnCollect'), btnRisk=document.getElementById('btnRiskCollect'), btnEval=document.getElementById('btnEval');
+btnCollect.addEventListener('click', async ()=>{
+  btnCollect.disabled=true; btnCollect.textContent='Collecting…'; setToast('Collecting currents + SSH…');
+  try{ await fetch('/api/marine/currents/collect',{method:'POST'});
+    await fetch('/api/marine/ssh/collect',{method:'POST'}); await fetch('/api/marine/risk/collect',{method:'POST'});
+    await loadAll(); setToast('Done — latest data loaded'); }
+  finally{ btnCollect.disabled=false; btnCollect.textContent='Collect now (CMEMS/mock)'; }
+});
+btnRiskCollect.addEventListener('click', async ()=>{
+  btnRiskCollect.disabled=true;
+  try{ const r=await fetch('/api/marine/risk/collect',{method:'POST'}); const j=await r.json(); setToast(j.message); await loadRisk(); }
+  catch(e){ setToast('Failed: '+e.message); } finally{ btnRiskCollect.disabled=false; }
+});
+btnEval.addEventListener('click', async ()=>{
+  btnEval.disabled=true; btnEval.innerHTML='Evaluating… <span class="pulse"></span>';
+  try{
+    const r=await fetch('/api/marine/risk/evaluate',{method:'POST'}); const j=await r.json();
+    if(j.status!=='running'){ setToast(j.message||'No risk data'); return; }
+    const poll=setInterval(async ()=>{
+      const s=await fetch(`/api/jobs/${j.job_id}`); const sj=await s.json();
+      if(sj.status==='success'){ clearInterval(poll); setToast('AI evaluation ready');
+        const res=sj.data; renderAlertEval(res); btnEval.innerHTML='🤖 AI evaluate hottest zone';
+        btnEval.disabled=false; }
+      else if(sj.status==='error'){ clearInterval(poll); setToast('Evaluation failed'); btnEval.innerHTML='🤖 AI evaluate hottest zone'; btnEval.disabled=false; }
+    },2500);
+  }catch(e){ setToast('Failed: '+e.message); btnEval.innerHTML='🤖 AI evaluate hottest zone'; btnEval.disabled=false; }
+});
+function renderAlertEval(res){
+  const box=document.getElementById('alerts');
+  const ev=res.evaluation||res.evaluation_text||'';
+  box.innerHTML=
+    `<div class="alert" style="border-left-color:#45d0ff"><span class="a-zone">🤖 ${res.zone||'Zone'}</span>
+     <span class="a-score">${res.risk_score? (res.risk_score*100).toFixed(0)+'%':''}</span>
+     <div style="margin-top:6px;font-size:11px;color:#9ca3af">${ev}</div></div>`+box.innerHTML;
+}
+function setToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.style.display='block'; clearTimeout(t._h); t._h=setTimeout(()=>t.style.display='none',3500); }
+
+// hover interactions on risk circles
+map.on('click','vr-circle',e=>{ e.preventDefault();
+  const p=e.features[0].properties;
+  showPopup({geometry:{coordinates:e.lngLat.toArray()}},
+    `<b>${p.zone||'Zone'}</b> <span class="badge ${p.danger}">${p.danger}</span><br>
+     <span class="detail">Composite risk: <b>${(p.risk_score*100).toFixed(0)}%</b><br>
+     Wave Hs: ${p.wave_height}m · Tp: ${p.wave_period}s · Wind: ${p.wind_speed} m/s</span>`);
+});
+map.on('click','w-circle',e=>{ e.preventDefault(); const p=e.features[0].properties;
+  showPopup({geometry:{coordinates:e.lngLat.toArray()}},`<b>${p.city}</b><br>
+   <span class="detail">🌡 ${p.temperature}°C · 💧 ${p.humidity}% · 💨 ${p.wind} m/s</span>`);
+});
+map.on('click','wave-circle',e=>{ e.preventDefault(); const p=e.features[0].properties;
+  showPopup({geometry:{coordinates:e.lngLat.toArray()}},`<b>${p.name}</b><br>
+   <span class="detail">Wave Hs: <b>${p.wave_height} m</b> · Period: ${p.wave_period} s</span>`);
+});
+
+// defer overview text
+setTimeout(()=>{ if(!mapReadyThrown) loadAll(); },800);
+</script>
+</body>
+</html>

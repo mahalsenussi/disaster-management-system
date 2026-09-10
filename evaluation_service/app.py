@@ -21,6 +21,9 @@ from evaluation_service.modules.weather.collector import WeatherCollector
 from evaluation_service.modules.coastal.service import CoastalService
 from evaluation_service.modules.coastal.evaluator import CoastalEvaluator
 from evaluation_service.modules.coastal.collector import CoastalCollector
+from evaluation_service.modules.marine.service import MarineService
+from evaluation_service.modules.marine.evaluator import MarineEvaluator
+from evaluation_service.modules.marine.collector import MarineCollector
 from evaluation_service.modules.news.service import NewsService
 from evaluation_service.modules.news.evaluator import NewsEvaluator
 from evaluation_service.modules.news.collector import NewsCollector
@@ -47,6 +50,9 @@ weather_collector = WeatherCollector()
 coastal_service = CoastalService()
 coastal_evaluator = CoastalEvaluator()
 coastal_collector = CoastalCollector()
+marine_service = MarineService()
+marine_evaluator = MarineEvaluator()
+marine_collector = MarineCollector()
 news_service = NewsService()
 news_evaluator = NewsEvaluator()
 news_collector = NewsCollector()
@@ -394,6 +400,128 @@ def get_coastal_locations():
             'status': 'error',
             'message': str(e)
         }), 500
+
+# ------------------------------------------------------------------ marine endpoints
+@app.route('/weather-map')
+@app.route('/weather-map/')
+def weather_map():
+    """Serve the interactive weather / sea-level / currents map."""
+    return render_template('weather_map.html')
+
+@app.route('/api/marine/currents', methods=['GET'])
+def get_marine_currents():
+    """Get latest sea surface current grid."""
+    try:
+        success, message, rows = marine_service.get_currents()
+        data = [
+            {'lat': r['lat'], 'lon': r['lon'], 'uo': r.get('uo'), 'vo': r.get('vo'),
+             'speed': r.get('speed'), 'direction_deg': r.get('direction_deg')}
+            for r in rows
+        ]
+        return jsonify({'status': 'success' if success else 'error',
+                        'message': message, 'data': data,
+                        'source': rows[0].get('src') if rows else None}), (200 if success else 404)
+    except Exception as e:
+        logger.error(f"Error getting marine currents: {e}", module='API', exc_info=True)
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@app.route('/api/marine/currents/collect', methods=['POST'])
+def collect_marine_currents():
+    """Collect (CMEMS or mock) and persist the current grid."""
+    try:
+        success, message = marine_collector.collect_currents_and_save()
+        return jsonify({'status': 'success' if success else 'error', 'message': message}), (200 if success else 400)
+    except Exception as e:
+        logger.error(f"Error collecting marine currents: {e}", module='API', exc_info=True)
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@app.route('/api/marine/ssh', methods=['GET'])
+def get_marine_ssh():
+    """Get latest sea surface height grid."""
+    try:
+        success, message, rows = marine_service.get_ssh()
+        data = [{'lat': r['lat'], 'lon': r['lon'], 'zos': r.get('zos')} for r in rows]
+        return jsonify({'status': 'success' if success else 'error',
+                        'message': message, 'data': data,
+                        'source': rows[0].get('src') if rows else None}), (200 if success else 404)
+    except Exception as e:
+        logger.error(f"Error getting marine SSH: {e}", module='API', exc_info=True)
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@app.route('/api/marine/ssh/collect', methods=['POST'])
+def collect_marine_ssh():
+    """Collect (CMEMS or mock) and persist the SSH grid."""
+    try:
+        success, message = marine_collector.collect_ssh_and_save()
+        return jsonify({'status': 'success' if success else 'error', 'message': message}), (200 if success else 400)
+    except Exception as e:
+        logger.error(f"Error collecting marine SSH: {e}", module='API', exc_info=True)
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@app.route('/api/marine/risk', methods=['GET'])
+def get_marine_risk():
+    """Get latest vessel-capsize risk zones."""
+    try:
+        success, message, rows = marine_service.get_vessel_risk()
+        return jsonify({'status': 'success' if success else 'error',
+                        'message': message, 'data': rows}), (200 if success else 404)
+    except Exception as e:
+        logger.error(f"Error getting marine risk: {e}", module='API', exc_info=True)
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@app.route('/api/marine/risk/collect', methods=['POST'])
+def collect_marine_risk():
+    """Collect currents+SSH, derive vessel risk, persist."""
+    try:
+        coastal_data = {}
+        for loc in coastal_service.get_all_locations():
+            row = coastal_service.get_coastal(loc, use_cache=True)
+            if row:
+                coastal_data[loc] = row
+        success, message = marine_collector.collect_risk_and_save(coastal_data)
+        return jsonify({'status': 'success' if success else 'error', 'message': message}), (200 if success else 400)
+    except Exception as e:
+        logger.error(f"Error collecting marine risk: {e}", module='API', exc_info=True)
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@app.route('/api/marine/risk/evaluate', methods=['POST'])
+def evaluate_marine_risk():
+    """Ollama narrative for the hottest risk zone (async job)."""
+    try:
+        success, message, rows = marine_service.get_vessel_risk()
+        if not success or not rows:
+            return jsonify({'status': 'error',
+                            'message': 'No vessel risk data. Run POST /api/marine/risk/collect first'}), 404
+
+        def _run():
+            ok, result = marine_evaluator.evaluate(rows)
+            if not ok:
+                raise RuntimeError('Marine evaluation failed')
+            return result
+
+        job_id = submit_job(_run)
+        return jsonify({'status': 'running', 'job_id': job_id,
+                        'message': 'Marine evaluation started'}), 202
+    except Exception as e:
+        logger.error(f"Error evaluating marine risk: {e}", module='API', exc_info=True)
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@app.route('/api/marine/zones', methods=['GET'])
+def get_marine_zones():
+    """Return Libya coastal zones + transit area metadata."""
+    try:
+        from evaluation_service.modules.marine.collector import ZONES
+        return jsonify({'status': 'success', 'data': ZONES}), 200
+    except Exception as e:
+        logger.error(f"Error getting marine zones: {e}", module='API', exc_info=True)
+        return jsonify({'status': 'error', 'message': str(e)}), 500
 
 @app.route('/api/news', methods=['GET'])
 def get_news():
@@ -1323,6 +1451,19 @@ def start_scheduler():
             scheduler.add_job(f'coastal_{loc}', lambda l=loc: coastal_collector.collect_and_save(l),
                               interval_minutes=60, at_time=f'00:{offset:02d}')
             offset += 2
+
+        # Marine: sea currents + SSH hourly, vessel risk every 30 min
+        scheduler.add_job('marine_currents',
+                          marine_collector.collect_currents_and_save,
+                          interval_minutes=60, at_time=f'00:{offset:02d}')
+        offset += 2
+        scheduler.add_job('marine_ssh',
+                          marine_collector.collect_ssh_and_save,
+                          interval_minutes=60, at_time=f'00:{offset:02d}')
+        offset += 2
+        scheduler.add_job('marine_risk',
+                          marine_collector.collect_risk_and_save,
+                          interval_minutes=30)
 
         scheduler.start()
         logger.info(f"Scheduler started with {len(scheduler.get_jobs())} jobs", module='MAIN')
