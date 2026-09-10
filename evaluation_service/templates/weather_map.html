@@ -94,9 +94,22 @@ const map = new maplibregl.Map({
   container: 'map',
   style: {
     version: 8,
+    glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
     sources: {
-      basemap: { type: 'raster', tiles: ['https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'], tileSize: 256 },
-      land: { type: 'raster', tiles: ['https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'], tileSize: 256 }
+      basemap: {
+        type: 'raster',
+        tiles: [
+          'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png',
+          'https://b.tile.openstreetmap.org/{z}/{x}/{y}.png',
+          'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png'
+        ],
+        tileSize: 256
+      },
+      land: {
+        type: 'raster',
+        tiles: ['https://a.tile.openstreetmap.org/{z}/{x}/{y}.png'],
+        tileSize: 256
+      }
     },
     layers: [
       { id: 'basemap', type: 'raster', source: 'basemap', minzoom: 1, maxzoom: 14 },
@@ -105,11 +118,12 @@ const map = new maplibregl.Map({
   },
   center: [18.0, 32.5],
   zoom: 6,
-  attributionControl: false
+  attributionControl: true,
+  scrollZoom: true
 });
 
 const LAYERS = {
-  currents: { geojson: null, layerIds: ['cur-dir'] },
+  currents: { geojson: null, layerIds: ['cur-dir', 'cur-out'] },
   sealevel: { geojson: null, layerIds: ['sl-heat', 'sl-heat-fill'] },
   waves: { geojson: null, layerIds: ['wave-circle'] },
   vesselrisk: { geojson: null, layerIds: ['vr-heat', 'vr-circle'] },
@@ -145,10 +159,16 @@ function projectToGeoJSON(points, propsFn){
 function addPointLayers(){
   map.addSource('cur-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
   map.addLayer({id:'cur-dir',type:'line',source:'cur-src',
-    paint:{'line-width':{stops:[[3,0.8],[9,2]]},
+    layout:{'line-join':'round','line-cap':'round'},
+    paint:{'line-width':{stops:[[3,1.2],[9,2.6]]},
       'line-color':['interpolate',['linear'],['get','speed'],
         0,'#0ea5e9',0.2,'#22d3ee',0.4,'#4ade80',0.6,'#facc15',0.8,'#fb7185',1,'#e11d48'],
-      'line-opacity':0.85}});
+      'line-opacity':0.95}});
+  // dark case under the arrows so they stay visible over the sea tiles
+  map.addLayer({id:'cur-out',type:'line',source:'cur-src',
+    layout:{'line-join':'round','line-cap':'round'},
+    paint:{'line-width':{stops:[[3,2.0],[9,3.6]]},
+      'line-color':'#0b1b2e','line-opacity':0.9}});
   map.addSource('sl-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
   map.addLayer({id:'sl-heat',type:'heatmap',source:'sl-src',
     paint:{ 'heatmap-weight':{property:'zos',stops:[[-0.5,0.2],[0,1],[0.5,0.2]]},
@@ -175,7 +195,8 @@ function addPointLayers(){
     paint:{ 'circle-radius':8,'circle-color':'#45d0ff','circle-stroke-width':2,'circle-stroke-color':'#ffffff',
       'circle-opacity':{property:'temperature', stops:[[0,0.4],[20,0.7],[40,1]]} }});
   map.addLayer({id:'w-label',type:'symbol',source:'w-src',
-    layout:{'text-field':['get','city'],'text-size':11,'text-offset':[0,1.2]},
+    layout:{'text-field':['get','city'],'text-size':11,'text-offset':[0,1.2],
+      'text-font':['Open Sans Semibold']},
     paint:{'text-color':'#ffffff','text-halo-color':'#111','text-halo-width':1}});
 }
 
@@ -202,6 +223,7 @@ map.on('load', ()=>{
   addPointLayers(); addZoneLayers(); mapReadyThrown=true;
   map.addSource('sl-heat-fill-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
   map.addLayer({id:'sl-heat-fill',type:'fill',source:'sl-heat-fill-src',paint:{'fill-opacity':0}});
+  map.moveLayer('cur-dir');
   loadAll();
   setInterval(loadAll, 300000); // 5 min auto-refresh
 });

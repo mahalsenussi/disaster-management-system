@@ -17,6 +17,7 @@ from typing import Dict, List, Optional
 
 from evaluation_service.core.logger import get_logger
 from evaluation_service.modules.marine.validator import MarineValidator
+from evaluation_service.modules.marine.landmask import filter_to_sea
 
 logger = get_logger()
 
@@ -67,11 +68,12 @@ class MarineCollector:
         if self.has_credentials():
             rows = self._collect_currents_cmems(bbox)
             if rows:
+                rows = filter_to_sea(rows)
                 message = f"Sea currents collected from CMEMS {CURRENT_DATASET}"
                 logger.info(message, module='MARINE_COLLECTOR')
                 return True, message, rows
             logger.warning("CMEMS current pull failed, using mock", module='MARINE_COLLECTOR')
-        rows = self._mock_currents(bbox)
+        rows = filter_to_sea(self._mock_currents(bbox))
         message = "Sea currents mock data (no CMEMS credentials)"
         logger.info(message, module='MARINE_COLLECTOR')
         return True, message, rows
@@ -152,11 +154,12 @@ class MarineCollector:
         if self.has_credentials():
             rows = self._collect_ssh_cmems(bbox)
             if rows:
+                rows = filter_to_sea(rows)
                 message = f"Sea surface height collected from CMEMS {SSH_DATASET}"
                 logger.info(message, module='MARINE_COLLECTOR')
                 return True, message, rows
             logger.warning("CMEMS SSH pull failed, using mock", module='MARINE_COLLECTOR')
-        rows = self._mock_ssh(bbox)
+        rows = filter_to_sea(self._mock_ssh(bbox))
         return True, "Sea surface height mock data (no CMEMS credentials)", rows
 
     def _collect_ssh_cmems(self, bbox: Dict) -> List[Dict]:

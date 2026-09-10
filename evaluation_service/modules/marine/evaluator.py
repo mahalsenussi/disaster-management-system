@@ -24,7 +24,11 @@ class MarineEvaluator:
         self.local_model = os.environ.get('OLLAMA_MODEL', 'minimax-m2.1:cloud')
         self.models = resolve_models(self.ollama_url, preferred=self.cloud_model,
                                      fallback=self.local_model)
+        # Slow cloud/thinking models caused multi-minute stalls; try fast local
+        # models first and push any 'thinking' model to the very end.
         if self.models:
+            self.models = [m for m in self.models if 'thinking' not in m.lower()] + \
+                          [m for m in self.models if 'thinking' in m.lower()]
             logger.info(f"Resolved Ollama models: {self.models}", module='MARINE_EVALUATOR')
 
     def evaluate(self, risk_rows: List[Dict]) -> Tuple[bool, Optional[Dict]]:
@@ -43,7 +47,7 @@ class MarineEvaluator:
                 response = requests.post(
                     f"{self.ollama_url}/api/generate",
                     json={"model": model, "prompt": prompt, "stream": False},
-                    timeout=75,
+                    timeout=30,
                 )
                 response.raise_for_status()
                 text = (response.json().get('response') or '').strip()
