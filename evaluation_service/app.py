@@ -24,6 +24,7 @@ from evaluation_service.modules.coastal.collector import CoastalCollector
 from evaluation_service.modules.marine.service import MarineService
 from evaluation_service.modules.marine.evaluator import MarineEvaluator
 from evaluation_service.modules.marine.collector import MarineCollector
+from evaluation_service.modules.marine import openmeteo as marine_openmeteo
 from evaluation_service.modules.news.service import NewsService
 from evaluation_service.modules.news.evaluator import NewsEvaluator
 from evaluation_service.modules.news.collector import NewsCollector
@@ -510,6 +511,19 @@ def evaluate_marine_risk():
                         'message': 'Marine evaluation started'}), 202
     except Exception as e:
         logger.error(f"Error evaluating marine risk: {e}", module='API', exc_info=True)
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@app.route('/api/marine/waves/deepsea', methods=['GET'])
+def get_marine_deepsea_waves():
+    """Deep-sea wave cross-check from Open-Meteo Marine (free, no key)."""
+    try:
+        success, message, rows = marine_openmeteo.get_deep_sea_waves()
+        return jsonify({'status': 'success' if success else 'error',
+                        'message': message, 'data': rows,
+                        'source': 'open-meteo'}), (200 if success else 502)
+    except Exception as e:
+        logger.error(f"Error getting deep-sea waves: {e}", module='API', exc_info=True)
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 
