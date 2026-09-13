@@ -64,9 +64,23 @@ class MarineRepository(BaseRepository):
                 collected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
             """,
+            """
+            CREATE TABLE IF NOT EXISTS marine_waves (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                time TIMESTAMP,
+                lat REAL,
+                lon REAL,
+                wave_height REAL,
+                wave_period REAL,
+                wave_direction REAL,
+                src TEXT,
+                collected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            """,
             """CREATE INDEX IF NOT EXISTS idx_marine_cur_time ON marine_currents(time)""",
             """CREATE INDEX IF NOT EXISTS idx_marine_ssh_time ON marine_ssh(time)""",
             """CREATE INDEX IF NOT EXISTS idx_vessel_risk_time ON vessel_risk(time)""",
+            """CREATE INDEX IF NOT EXISTS idx_marine_waves_time ON marine_waves(time)""",
         ]
         for query in queries:
             self.execute_update(query)
@@ -108,6 +122,27 @@ class MarineRepository(BaseRepository):
         """
         params = [
             (r.get('time'), r.get('lat'), r.get('lon'), r.get('zos'), r.get('src'))
+            for r in rows
+        ]
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.executemany(query, params)
+            return cursor.rowcount
+
+    def save_waves(self, rows: list) -> int:
+        """Insert a batch of deep-sea wave points."""
+        if not rows:
+            return 0
+        query = """
+        INSERT INTO marine_waves (time, lat, lon, wave_height, wave_period, wave_direction, src)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        """
+        params = [
+            (
+                r.get('time'), r.get('lat'), r.get('lon'),
+                r.get('wave_height'), r.get('wave_period'),
+                r.get('wave_direction'), r.get('src'),
+            )
             for r in rows
         ]
         with self._get_connection() as conn:
@@ -162,6 +197,20 @@ class MarineRepository(BaseRepository):
             return []
         query = f"SELECT * FROM {table} WHERE time = ? ORDER BY lat, lon"
         return self.execute_query(query, (latest,))
+
+    def get_latest_waves(self, max_age_hours: int = 6) -> List[Dict]:
+        """Return most-recent deep-sea wave rows if within max_age_hours."""
+        latest = self.get_latest_time('marine_waves')
+        if not latest:
+            return []
+        try:
+            latest_time = datetime.fromisoformat(latest)
+            if (datetime.now(timezone.utc) - latest_time).total_seconds() > (max_age_hours * 3600):
+                return []
+        except Exception:
+            return []
+        return self.execute_query(
+            "SELECT * FROM marine_waves WHERE time = ? ORDER BY lat, lon", (latest,))
 
     def get_latest_vessel_risk(self, max_age_hours: int = 6) -> List[Dict]:
         """Return most-recent vessel risk rows if within max_age_hours."""

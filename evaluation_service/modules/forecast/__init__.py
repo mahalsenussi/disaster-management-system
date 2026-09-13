@@ -1,0 +1,1 @@
+"""Open-Meteo forecast & historical weather module."""

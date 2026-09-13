@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Libya Forecast & Historical Weather</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@5.9.0/dist/maplibre-gl.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Ubuntu,sans-serif;background:#0b0e17;color:#e8eaf0;overflow:hidden}
+#map{position:absolute;inset:0;z-index:0}
+
+/* top bar */
+.topbar{position:fixed;top:12px;left:12px;z-index:20;display:flex;gap:8px;align-items:center}
+.topbar a{color:#45d0ff;font-weight:700;font-size:15px;text-decoration:none;white-space:nowrap;padding:6px 10px;background:rgba(15,18,32,.85);border-radius:8px;backdrop-filter:blur(4px);border:1px solid #2a3152}
+.topbar a:hover{background:#1a1f35}
+#citySelect{background:#121524;color:#e8eaf0;border:1px solid #2a3152;border-radius:8px;padding:6px 10px;font-size:13px;max-width:180px;cursor:pointer;backdrop-filter:blur(4px)}
+#citySelect option{background:#121524;color:#e8eaf0}
+
+/* hero card */
+.hero{position:fixed;top:56px;left:12px;z-index:20;background:rgba(15,18,32,.92);border:1px solid #2a3152;border-radius:10px;padding:14px 16px;width:260px;backdrop-filter:blur(6px);display:none}
+.hero.show{display:block}
+.hero-temp{font-size:42px;font-weight:300;line-height:1}
+.hero-desc{font-size:13px;color:#a0aec0;margin:2px 0 8px}
+.hero-detail{display:grid;grid-template-columns:1fr 1fr;gap:3px 10px;font-size:12px}
+.hero-detail span{color:#7a8196}.hero-detail b{color:#cfd4e3;font-weight:500}
+
+/* tabs */
+.tabs{position:fixed;top:12px;right:12px;z-index:20;display:flex;gap:4px}
+.tab-btn{background:rgba(15,18,32,.85);border:1px solid #2a3152;color:#7a8196;padding:7px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;backdrop-filter:blur(4px);transition:.15s}
+.tab-btn:hover{border-color:#45d0ff;color:#cfd4e3}
+.tab-btn.on{background:#0ea5e9;color:#04121f;border-color:#0ea5e9}
+
+/* right panel */
+.rpanel{position:fixed;top:52px;right:12px;bottom:72px;width:380px;z-index:18;background:rgba(15,18,32,.92);border:1px solid #2a3152;border-radius:10px;overflow:hidden;display:flex;flex-direction:column;backdrop-filter:blur(6px);display:none}
+.rpanel.show{display:flex}
+.rp-head{padding:10px 14px;border-bottom:1px solid #1f2437;font-size:13px;color:#45d0ff;font-weight:700;flex-shrink:0}
+.rp-body{flex:1;overflow-y:auto;padding:12px 14px}
+
+/* bottom playback bar */
+.pbar{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);z-index:20;background:rgba(15,18,32,.92);border:1px solid #2a3152;border-radius:10px;padding:8px 16px;display:flex;align-items:center;gap:12px;backdrop-filter:blur(6px);width:min(680px,calc(100vw - 24px))}
+.pbar .play-btn{width:32px;height:32px;border-radius:50%;background:#0ea5e9;border:none;color:#04121f;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.pbar input[type=range]{flex:1;height:4px;accent-color:#0ea5e9}
+.pbar .time-label{font-size:12px;color:#a0aec0;min-width:140px;text-align:center}
+.layer-btns{display:flex;gap:4px}
+.layer-btn{width:28px;height:28px;border-radius:6px;border:1px solid #2a3152;background:#181c2e;color:#7a8196;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.layer-btn.on{border-color:#0ea5e9;color:#0ea5e9;background:#0b1f35}
+
+/* forecast cards */
+.day-card{background:#181c2e;border-radius:8px;padding:10px;margin-bottom:6px;border:1px solid #1f2437}
+.day-card .d-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.day-card .d-date{font-size:12px;color:#7a8196}
+.day-card .d-icon{font-size:18px}
+.day-card .d-temps{font-size:14px;font-weight:600}
+.day-card .d-temps b{color:#fb923c}
+.day-card .d-temps i{color:#60a5fa;font-style:normal}
+.day-card .d-detail{font-size:11px;color:#a0aec0;margin-top:4px}
+
+/* historical */
+.hf-row{display:flex;gap:4px;margin-bottom:10px}
+.hf-btn{flex:1;padding:6px;background:#181c2e;border:1px solid #1f2437;color:#7a8196;border-radius:6px;font-size:11px;cursor:pointer;text-align:center}
+.hf-btn.on{border-color:#0ea5e9;color:#0ea5e9}
+.chart-wrap{background:#181c2e;border-radius:8px;padding:10px;border:1px solid #1f2437;margin-bottom:10px}
+.chart-wrap canvas{max-height:160px}
+.rec-title{font-size:12px;color:#45d0ff;margin:8px 0 4px}
+.rec-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.rec-item{background:#181c2e;border-radius:6px;padding:8px;border:1px solid #1f2437}
+.rec-item .rv{font-size:18px;font-weight:700;color:#fb923c}
+.rec-item .rd{font-size:10px;color:#7a8196;margin-top:2px}
+.norms-table{width:100%;font-size:11px;border-collapse:collapse}
+.norms-table th{color:#45d0ff;font-weight:600;padding:3px 6px;text-align:left;border-bottom:1px solid #1f2437}
+.norms-table td{padding:3px 6px;color:#a0aec0;border-bottom:1px solid #0f1225}
+
+/* status/loading */
+.status-msg{font-size:11px;color:#5b6378;text-align:center;padding:12px}
+.pulse{animation:pulse 1s infinite}
+@keyframes pulse{0%{opacity:1}50%{opacity:.4}100%{opacity:1}}
+.bmtoggle{position:fixed;bottom:12px;left:12px;z-index:20;display:flex;gap:4px}
+.bm-btn{background:rgba(15,18,32,.9);border:1px solid #2a3152;color:#7a8196;padding:6px 11px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;backdrop-filter:blur(4px)}
+.bm-btn.on{border-color:#0ea5e9;color:#0ea5e9;background:#0b1f35}
+.layer-btn.clouds{background:#181c2e;color:#9fb3d1;border-color:#33507a}
+.layer-btn.clouds.on{border-color:#93c5fd;color:#93c5fd;background:#0f2035}
+</style>
+</head>
+<body>
+<div id="map"></div>
+
+<div class="topbar">
+  <a href="/weather-map">← Weather Map</a>
+  <select id="citySelect"><option value="">Select city…</option></select>
+</div>
+
+<div class="hero" id="hero">
+  <div class="hero-temp" id="heroTemp">--°</div>
+  <div class="hero-desc" id="heroDesc">—</div>
+  <div class="hero-detail">
+    <span>Feels like</span><b id="hFeel">—</b>
+    <span>Humidity</span><b id="hHum">—</b>
+    <span>Wind</span><b id="hWind">—</b>
+    <span>Pressure</span><b id="hPres">—</b>
+    <span>UV Index</span><b id="hUv">—</b>
+    <span>Cloud cover</span><b id="hCloud">—</b>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn on" data-tab="forecast">Forecast</button>
+  <button class="tab-btn" data-tab="history">Historical</button>
+  <button class="tab-btn" data-tab="records">Records</button>
+</div>
+
+<div class="rpanel" id="panel">
+  <div class="rp-head" id="panelTitle">Forecast</div>
+  <div class="rp-body" id="panelBody"><div class="status-msg">Select a city…</div></div>
+</div>
+
+<div class="pbar" id="playbar">
+  <button class="play-btn" id="playBtn">▶</button>
+  <input type="range" id="slider" min="0" max="0" value="0">
+  <div class="time-label" id="timeLabel">—</div>
+  <div class="layer-btns">
+    <button class="layer-btn clouds on" data-layer="C" title="Clouds">C</button>
+    <button class="layer-btn on" data-layer="T" title="Temperature">T</button>
+    <button class="layer-btn on" data-layer="W" title="Wind">W</button>
+    <button class="layer-btn" data-layer="R" title="Precipitation">R</button>
+  </div>
+</div>
+
+<div class="bmtoggle">
+  <button class="bm-btn on" data-basemap="street">🗺 Map</button>
+  <button class="bm-btn" data-basemap="satellite">🛰 Sat</button>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5.9.0/dist/maplibre-gl.js"></script>
+<script>
+const map = new maplibregl.Map({
+  container: 'map', center: [18.0, 32.5], zoom: 6,
+  attributionControl: {compact: true, position: 'bottom-left'},
+  style: {
+    version: 8,
+    glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
+    sources: {
+      basemap: { type: 'raster',
+        tiles: ['https://a.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                'https://b.tile.openstreetmap.org/{z}/{x}/{y}.png'],
+        tileSize: 256 },
+      satellite: { type: 'raster',
+        tiles: ['https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2020_3857/default/g/{z}/{y}/{x}.jpg'],
+        tileSize: 256, maxzoom: 16 }
+    },
+    layers: [
+      { id: 'basemap', type: 'raster', source: 'basemap', minzoom: 1, maxzoom: 19 },
+      { id: 'satellite', type: 'raster', source: 'satellite', minzoom: 1, maxzoom: 16, layout: { visibility: 'none' } }
+    ]
+  }
+});
+
+function applyBasemap(mode){
+  document.querySelectorAll('.bm-btn').forEach(el=>el.classList.toggle('on', el.dataset.basemap===mode));
+  if(!map.isStyleLoaded()) return;
+  map.setLayoutProperty('basemap','visibility', mode==='street'?'visible':'none');
+  map.setLayoutProperty('satellite','visibility', mode==='satellite'?'visible':'none');
+}
+document.querySelectorAll('.bm-btn').forEach(el=>{
+  el.addEventListener('click',()=>applyBasemap(el.dataset.basemap));
+});
+
+const WMO_ICONS={0:'☀️',1:'🌤️',2:'⛅',3:'☁️',45:'🌫️',48:'🌫️',51:'🌦️',53:'🌦️',55:'🌧️',56:'🌧️',57:'🌧️',
+  61:'🌧️',63:'🌧️',65:'🌧️',66:'🌧️',67:'🌧️',71:'❄️',73:'❄️',75:'❄️',77:'❄️',80:'🌧️',81:'🌧️',82:'🌧️',
+  85:'❄️',86:'❄️',95:'⛈️',96:'⛈️',99:'⛈️'};
+function wmoIcon(code){ return WMO_ICONS[code]||'🌡️'; }
+function wmoText(code){
+  const m={0:'Clear sky',1:'Mainly clear',2:'Partly cloudy',3:'Overcast',
+    45:'Fog',48:'Rime fog',51:'Light drizzle',53:'Drizzle',55:'Dense drizzle',
+    61:'Light rain',63:'Moderate rain',65:'Heavy rain',71:'Light snow',73:'Snow',75:'Heavy snow',
+    80:'Light showers',81:'Moderate showers',82:'Violent showers',95:'Thunderstorm',96:'Thunderstorm + hail',99:'Heavy thunderstorm'};
+  return m[code]||'—';
+}
+function fmtDate(iso){ const d=new Date(iso+'T00:00:00'); return d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}); }
+function fmtHour(iso){ return iso?iso.slice(0,16).replace('T',' '):'—'; }
+
+let selectedCity=null, currentTab='forecast', forecastData=null, historyData=null, climateData=null;
+let gridAll=[], gridHours=[], selectedHourIdx=0, playing=false, playTimer=null;
+let activeLayers={C:true,T:true,W:true,R:false};
+
+/*-------------- map--------------*/
+let cityMarkers=[], selectedMarker=null;
+function setCityMarkers(cities){
+  cityMarkers.forEach(m=>m.remove()); cityMarkers=[];
+  cities.forEach(c=>{
+    const el=document.createElement('div');
+    el.style.cssText='width:10px;height:10px;border-radius:50%;background:#45d0ff;border:2px solid #0b0e17;cursor:pointer';
+    const m=new maplibregl.Marker({element:el}).setLngLat([c.lon,c.lat]).addTo(map);
+    el.onclick=()=>selectCity(c.name);
+    cityMarkers.push(m);
+  });
+}
+function highlightMarker(city){
+  cityMarkers.forEach(m=>{ m.getElement().style.background='#45d0ff'; });
+  if(selectedCity){
+    const ci=CITIES.findIndex(c=>c.name===selectedCity);
+    if(ci>=0) cityMarkers[ci].getElement().style.background='#fb923c';
+  }
+}
+
+map.on('click', e=>{
+  const ll=e.lngLat;
+  let best=null, bestD=Infinity;
+  CITIES.forEach(c=>{ const d=Math.hypot(c.lat-ll.lat,c.lon-ll.lng); if(d<bestD){bestD=d;best=c;} });
+  if(best && bestD<0.5) selectCity(best.name);
+});
+
+/*-------------- data--------------*/
+let CITIES=[];
+async function loadCities(){
+  const r=await fetch('/api/forecast/cities'); const j=await r.json();
+  if(j.status==='success'){ CITIES=j.data;
+    const sel=document.getElementById('citySelect');
+    sel.innerHTML='<option value="">Select city…</option>'+CITIES.map(c=>`<option value="${c.name}">${c.name}</option>`).join('');
+    setCityMarkers(CITIES);
+  }
+}
+
+async function selectCity(name){
+  selectedCity=name;
+  document.getElementById('citySelect').value=name;
+  highlightMarker(name);
+  const c=CITIES.find(x=>x.name===name);
+  if(c) map.flyTo({center:[c.lon,c.lat],zoom:9,duration:600});
+  showPanel(true);
+  loadForecastPanel();
+}
+
+document.getElementById('citySelect').addEventListener('change', e=>{ if(e.target.value) selectCity(e.target.value); });
+
+async function loadForecastPanel(){
+  if(!selectedCity) return;
+  showPanel(true); setPanelLoading('Loading forecast…');
+  try{
+    const r=await fetch(`/api/forecast/${encodeURIComponent(selectedCity)}`); const j=await r.json();
+    if(j.status!=='success'){ setPanelError(j.message); return; }
+    forecastData=j.data.payload;
+    renderHero();
+    renderPanel();
+  }catch(e){ setPanelError(e.message); }
+}
+
+function renderHero(){
+  if(!forecastData) return;
+  const cur=forecastData.current||{};
+  const hero=document.getElementById('hero'); hero.classList.add('show');
+  document.getElementById('heroTemp').textContent=`${Math.round(cur.temperature_2m||0)}°C`;
+  document.getElementById('heroDesc').textContent=`${wmoIcon(cur.weather_code)} ${wmoText(cur.weather_code)}`;
+  document.getElementById('hFeel').textContent=`${Math.round(cur.apparent_temperature||0)}°C`;
+  document.getElementById('hHum').textContent=`${cur.relative_humidity_2m??'—'}%`;
+  document.getElementById('hWind').textContent=`${(cur.wind_speed_10m||0).toFixed(1)} m/s`;
+  document.getElementById('hPres').textContent=`${Math.round(cur.pressure_msl||0)} hPa`;
+  document.getElementById('hUv').textContent=`—`;
+  document.getElementById('hCloud').textContent=`${cur.cloud_cover??'—'}%`;
+}
+
+function renderPanel(){
+  if(currentTab==='forecast') renderForecastTab();
+  else if(currentTab==='history') renderHistoryTab();
+  else renderRecordsTab();
+}
+
+function renderForecastTab(){
+  if(!forecastData) return;
+  const body=document.getElementById('panelBody');
+  const hourly=forecastData.hourly||{}; const daily=forecastData.daily||{};
+  const times=hourly.time||[];
+  const now=new Date().toISOString().slice(0,16);
+  let idx=0; for(let i=0;i<times.length;i++){if(times[i]>=now.slice(0,13)){idx=i;break;}}
+
+  let html=`<div style="font-size:12px;color:#7a8196;margin-bottom:6px">7-day forecast · GFS best-match</div>`;
+  (daily.time||[]).forEach((date,i)=>{
+    const code=daily.weather_code?.[i]??0;
+    const tmax=daily.temperature_2m_max?.[i]??'—';
+    const tmin=daily.temperature_2m_min?.[i]??'—';
+    const precip=daily.precipitation_sum?.[i]??0;
+    const wind=daily.wind_speed_10m_max?.[i]??'—';
+    const uv=daily.uv_index_max?.[i]??'—';
+    const sunrise=(daily.sunrise?.[i]||'').slice(11,16);
+    const sunset=(daily.sunset?.[i]||'').slice(11,16);
+    html+=`<div class="day-card">
+      <div class="d-head"><span class="d-date">${fmtDate(date)}</span><span class="d-icon">${wmoIcon(code)}</span></div>
+      <div class="d-temps"><b>${tmax}°</b> <i>${tmin}°</i></div>
+      <div class="d-detail">💧 ${precip}mm · 💨 ${wind}m/s · ☀ UV ${uv} · ↑${sunrise} ↓${sunset}</div>
+    </div>`;
+  });
+
+  body.innerHTML=html;
+  document.getElementById('panelTitle').textContent=`Forecast · ${selectedCity}`;
+}
+
+/*-------------- historical tab--------------*/
+let histChart=null, anomalyChart=null;
+
+async function loadHistory(days=90){
+  if(!selectedCity) return;
+  setPanelLoading(`Loading ${days}-day history…`);
+  try{
+    const end=new Date().toISOString().slice(0,10);
+    const start=new Date(Date.now()-days*86400000).toISOString().slice(0,10);
+    const r=await fetch(`/api/forecast/${encodeURIComponent(selectedCity)}/history?from=${start}&to=${end}`);
+    const j=await r.json();
+    if(j.status!=='success'){ setPanelError(j.message); return; }
+    historyData=j.data; renderHistoryChart();
+  }catch(e){ setPanelError(e.message); }
+}
+
+function renderHistoryChart(){
+  if(!historyData||!historyData.length) return;
+  const body=document.getElementById('panelBody');
+  const labels=historyData.map(r=>r.date);
+  const tmax=historyData.map(r=>r.temperature_2m_max);
+  const tmin=historyData.map(r=>r.temperature_2m_min);
+  const prec=historyData.map(r=>r.precipitation_sum||0);
+  body.innerHTML=`<div class="chart-wrap"><canvas id="histChart"></canvas></div>
+    <div id="anomalyArea"></div>`;
+  const ctx=document.getElementById('histChart').getContext('2d');
+  histChart?.destroy();
+  histChart=new Chart(ctx,{type:'bar',data:{
+    labels, datasets:[
+      {type:'line',label:'Max °C',data:tmax,borderColor:'#fb923c',borderWidth:1.5,pointRadius:0,tension:.3,yAxisID:'y'},
+      {type:'line',label:'Min °C',data:tmin,borderColor:'#60a5fa',borderWidth:1.5,pointRadius:0,tension:.3,yAxisID:'y'},
+      {type:'bar',label:'Rain mm',data:prec,backgroundColor:'rgba(96,165,250,.35)',yAxisID:'y1'}
+    ]},options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{labels:{color:'#7a8196',font:{size:10}}},title:{display:false}},
+    scales:{x:{ticks:{color:'#5b6378',font:{size:8},maxTicksLimit:12},grid:{color:'#1f2437'}},
+      y:{position:'left',ticks:{color:'#7a8196',font:{size:9}},grid:{color:'#1f2437'}},
+      y1:{position:'right',ticks:{color:'#60a5fa',font:{size:9}},grid:{display:false}}
+    }}});
+  loadAnomaly();
+}
+
+async function loadAnomaly(){
+  if(!selectedCity) return;
+  const year=new Date().getFullYear();
+  try{
+    const r=await fetch(`/api/forecast/${encodeURIComponent(selectedCity)}/anomaly?year=${year}`);
+    const j=await r.json();
+    if(j.status==='success'&&j.data&&j.data.months&&j.data.months.length){
+      const area=document.getElementById('anomalyArea');
+      area.innerHTML=`<div class="chart-wrap"><canvas id="anomChart"></canvas></div>`;
+      const months=j.data.months.map(m=>['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+m.month]);
+      const vals=j.data.months.map(m=>m.temp_anomaly?+(m.temp_anomaly).toFixed(1):null);
+      const ctx=document.getElementById('anomChart').getContext('2d');
+      anomalyChart?.destroy();
+      anomalyChart=new Chart(ctx,{type:'bar',data:{labels:months,datasets:[
+        {label:`${year} anomaly °C`,data:vals,
+         backgroundColor:vals.map(v=>v===null?'#333':v>0?'rgba(251,146,60,.7)':'rgba(96,165,250,.7)'),
+         borderRadius:4}
+      ]},options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},title:{display:true,text:`Temperature anomaly vs normals (${year})`,color:'#7a8196',font:{size:10}}},
+      scales:{x:{ticks:{color:'#5b6378',font:{size:9}},grid:{color:'#1f2437'}},
+        y:{ticks:{color:'#7a8196',font:{size:9}},grid:{color:'#1f2437'}}
+      }}});
+    }
+  }catch(e){}
+}
+
+/*-------------- records tab--------------*/
+async function loadRecords(){
+  if(!selectedCity) return;
+  setPanelLoading('Loading climate records…');
+  try{
+    const r=await fetch(`/api/forecast/${encodeURIComponent(selectedCity)}/climate`);
+    const j=await r.json();
+    if(j.status!=='success'){ setPanelError(j.message); return; }
+    climateData=j.data; renderRecordsPanel();
+  }catch(e){ setPanelError(e.message); }
+}
+
+function renderRecordsPanel(){
+  if(!climateData) return;
+  const body=document.getElementById('panelBody');
+  const all=climateData.all_time||{}; const span=climateData.span||{}; const monthly=climateData.monthly||{};
+  let html=`<div style="font-size:11px;color:#7a8196;margin-bottom:6px">
+    Coverage: ${span.from||'?'} → ${span.to||'?'} (${span.days||0} days) · Mean ${span.mean_temp?.toFixed(1)||'—'}°C · Annual precip ${span.annual_precip?.toFixed(0)||'—'}mm</div>`;
+  html+=`<div class="rec-title">All-time records</div><div class="rec-grid">`;
+  function rec(label,val,unit,date){return `<div class="rec-item"><div class="rv">${val!=null?val.toFixed(1)+'°'+unit:'—'}</div><div class="rd">${label}<br>${date||''}</div></div>`;}
+  html+=rec('🔥 Hottest day',all.hottest?.value,'C',all.hottest?.date);
+  html+=rec('❄️ Coldest night',all.coldest?.value,'C',all.coldest?.date);
+  html+=rec('💧 Wettest day',all.wettest?.value,'mm',all.wettest?.date);
+  html+=rec('💨 Windiest',all.windiest?.value,'m/s',all.windiest?.date);
+  html+=`</div>`;
+  const months=['01','02','03','04','05','06','07','08','09','10','11','12'];
+  html+=`<div class="rec-title" style="margin-top:10px">Monthly normals</div>
+    <table class="norms-table"><thead><tr><th>Month</th><th>High</th><th>Low</th><th>Rain</th><th>Wind</th></tr></thead><tbody>`;
+  months.forEach(m=>{
+    const n=monthly[m]||{};
+    const name=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+m-1];
+    html+=`<tr><td>${name}</td><td>${n.mean_max!=null?n.mean_max.toFixed(1)+'°':'—'}</td>
+      <td>${n.mean_min!=null?n.mean_min.toFixed(1)+'°':'—'}</td>
+      <td>${n.mean_precip!=null?n.mean_precip.toFixed(1)+'mm':'—'}</td>
+      <td>${n.mean_wind!=null?n.mean_wind.toFixed(1)+'m/s':'—'}</td></tr>`;
+  });
+  html+=`</tbody></table>`;
+  body.innerHTML=html;
+  document.getElementById('panelTitle').textContent=`Climate records · ${selectedCity}`;
+}
+
+/*-------------- panel helpers--------------*/
+function showPanel(on){ document.getElementById('panel').classList.toggle('show',on); document.getElementById('panel').classList.toggle('rpanel',true); }
+function setPanelLoading(msg){ document.getElementById('panelBody').innerHTML=`<div class="status-msg"><span class="pulse">${msg}</span></div>`; }
+function setPanelError(msg){ document.getElementById('panelBody').innerHTML=`<div class="status-msg" style="color:#fb7185">${msg}</div>`; }
+
+/*-------------- tabs--------------*/
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('on'));
+    btn.classList.add('on');
+    currentTab=btn.dataset.tab;
+    if(currentTab==='forecast') loadForecastPanel();
+    else if(currentTab==='history') loadHistory(90);
+    else loadRecords();
+  });
+});
+
+/*-------------- grid playback--------------*/
+const TEMP_SOURCE='grid-temp', WIND_SOURCE='grid-wind', PREC_SOURCE='grid-prec', CLOUD_SOURCE='grid-cloud';
+
+function initGridLayers(){
+  [TEMP_SOURCE,PREC_SOURCE,CLOUD_SOURCE].forEach(s=>{
+    if(!map.getSource(s)) map.addSource(s,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+  });
+  if(!map.getLayer('grid-temp-heat'))
+    map.addLayer({id:'grid-temp-heat',type:'heatmap',source:TEMP_SOURCE,
+      layout:{visibility:'visible'},
+      paint:{'heatmap-weight':['interpolate',['linear'],['get','val'],10,0,20,0.3,30,0.6,40,0.9,46,1],
+        'heatmap-intensity':0.65,
+        'heatmap-color':['interpolate',['linear'],['heatmap-density'],0,'rgba(96,165,250,0)',0.35,'#3b82f6',0.6,'#facc15',0.85,'#fb923c',1,'#ef4444'],
+        'heatmap-radius':['interpolate',['linear'],['zoom'],4,10,7,22],'heatmap-opacity':0.6}});
+  if(!map.getLayer('grid-prec-heat'))
+    map.addLayer({id:'grid-prec-heat',type:'heatmap',source:PREC_SOURCE,
+      layout:{visibility:'none'},
+      paint:{'heatmap-weight':['interpolate',['linear'],['get','prec'],0,0,5,0.5,20,1],
+        'heatmap-intensity':0.8,
+        'heatmap-color':['interpolate',['linear'],['heatmap-density'],0,'rgba(96,165,250,0)',0.3,'#60a5fa',0.7,'#3b82f6',1,'#1d4ed8'],
+        'heatmap-radius':['interpolate',['linear'],['zoom'],4,8,7,18],'heatmap-opacity':0.65}});
+  // clouds render on top (Zoom Earth style)
+  if(!map.getLayer('grid-cloud-heat'))
+    map.addLayer({id:'grid-cloud-heat',type:'heatmap',source:CLOUD_SOURCE,
+      layout:{visibility:'visible'},
+      paint:{'heatmap-weight':['interpolate',['linear'],['get','cloud'],0,0,30,0.15,55,0.4,70,0.7,85,1.05],
+        'heatmap-intensity':1.0,
+        'heatmap-color':['interpolate',['linear'],['heatmap-density'],0,'rgba(120,148,190,0)',0.3,'rgba(160,182,216,0.45)',0.55,'rgba(205,220,242,0.72)',0.75,'rgba(232,240,252,0.9)',1,'rgba(250,253,255,1)'],
+        'heatmap-radius':['interpolate',['linear'],['zoom'],4,12,7,26],'heatmap-opacity':0.72}});
+}
+
+async function loadGrid(){
+  try{
+    const r=await fetch('/api/forecast/grid?var=temperature&all=1'); const j=await r.json();
+    if(j.status!=='success'||!j.data||!j.data.rows){return;}
+    gridHours=j.data.hours||[];
+    gridAll=j.data.rows||[];
+    selectedHourIdx=0;
+    document.getElementById('slider').max=gridHours.length-1;
+    initGridLayers();
+    setMapHour(0);
+  }catch(e){console.warn('grid:',e);}
+}
+
+function setMapHour(idx){
+  if(idx<0||idx>=gridHours.length) return;
+  selectedHourIdx=idx;
+  const hour=gridHours[idx];
+  document.getElementById('slider').value=idx;
+  document.getElementById('timeLabel').textContent=fmtHour(hour);
+
+  const tempFeats=[], precFeats=[], cloudFeats=[];
+  const hourData=gridAll.filter(r=>r.fcst_hour===hour);
+  hourData.forEach(r=>{
+    const p={type:'Feature',geometry:{type:'Point',coordinates:[r.lon,r.lat]},
+      properties:{val:r.temperature_2m??0,prec:r.precipitation??0,cloud:r.cloud_cover??0,
+        wcode:r.weather_code??0,
+        ws:r.wind_speed_10m??0,wd:r.wind_direction_10m??0,u10:r.u10??0,v10:r.v10??0,fcst_hour:r.fcst_hour}};
+    if(r.temperature_2m!=null) tempFeats.push(p);
+    if(r.precipitation!=null && r.precipitation>0) precFeats.push(p);
+    if(r.cloud_cover!=null) cloudFeats.push(p);
+  });
+  map.getSource(TEMP_SOURCE)?.setData({type:'FeatureCollection',features:tempFeats});
+  map.getSource(PREC_SOURCE)?.setData({type:'FeatureCollection',features:precFeats});
+  map.getSource(CLOUD_SOURCE)?.setData({type:'FeatureCollection',features:cloudFeats});
+
+  updateLayerVisibility();
+  rebuildWindGrid(hourData);
+}
+
+/*-------------- wind arrows (static, speed-colored)--------------*/
+let windParticlesGrid=null;
+const windCanv=document.createElement('canvas');
+windCanv.id='wind-canvas';
+windCanv.style.cssText='position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:2';
+const windCtx=windCanv.getContext('2d');
+function windArrowColor(spd){
+  if(spd<1.5)return'#57c7ff';else if(spd<3)return'#22d3ee';else if(spd<5)return'#4ade80';
+  else if(spd<8)return'#a3e635';else if(spd<11)return'#fbbf24';return'#f87171';
+}
+function drawArrow(ctx,x,y,dx,dy,color,L){
+  const len=Math.hypot(dx,dy)||1, ux=dx/len, uy=dy/len;
+  ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=1.8;
+  ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+ux*L,y+uy*L);ctx.stroke();
+  const hx=x+ux*L, hy=y+uy*L, a1=(25*Math.PI)/180;
+  const cx=Math.cos(a1),sx=Math.sin(a1);
+  ctx.beginPath();
+  ctx.moveTo(hx,hy);
+  ctx.lineTo(hx-L*0.38*(ux*cx-uy*sx), hy-L*0.38*(ux*sx+uy*cx));
+  ctx.moveTo(hx,hy);
+  ctx.lineTo(hx-L*0.38*(ux*cx+uy*sx), hy+L*0.38*(ux*sx-uy*cx));
+  ctx.stroke();
+}
+function windDraw(){
+  const g=windParticlesGrid;
+  const cssW=map.getContainer().clientWidth, cssH=map.getContainer().clientHeight;
+  if(!cssW||!cssH) return;
+  const dpr=window.devicePixelRatio||1;
+  if(windCanv.width!==cssW*dpr||windCanv.height!==cssH*dpr){windCanv.width=cssW*dpr;windCanv.height=cssH*dpr;}
+  windCtx.setTransform(dpr,0,0,dpr,0,0);
+  windCtx.clearRect(0,0,cssW,cssH);
+  if(!activeLayers.W||!g) return;
+  const zoom=map.getZoom();
+  const base=Math.max(9, Math.min(20, 6+zoom*0.7)); // pixel scale for arrow length
+  for(let yi=0;yi<g.height;yi+=2){
+    for(let xi=0;xi<g.width;xi+=2){
+      const i=yi*g.width+xi;
+      if(!g.valid[i]) continue;
+      const spd=Math.hypot(g.U[i],g.V[i]);
+      const L=Math.max(8,Math.min(34,base+spd*1.1));
+      const p=map.project([g.minLon+(g.maxLon-g.minLon)*xi/(g.width-1), g.minLat+(g.maxLat-g.minLat)*yi/(g.height-1)]);
+      if(p.x<-8||p.x>cssW+8||p.y<-8||p.y>cssH+8) continue;
+      let dx=g.U[i], dy=g.V[i]; // u,v are the flow vector (direction wind blows toward)
+      const fl=Math.hypot(dx,dy)||1;
+      dx/=fl;dy/=fl;
+      drawArrow(windCtx,p.x,p.y,dx,dy,windArrowColor(spd),L);
+    }
+  }
+}
+map.once('load',()=>{
+  map.getCanvasContainer().appendChild(windCanv);
+  (function loop(){requestAnimationFrame(loop);try{windDraw();}catch(e){}}());
+});
+
+function rebuildWindGrid(hourData){
+  if(!hourData||!hourData.length) return;
+  const lons=[...new Set(hourData.map(r=>r.lon))].sort((a,b)=>a-b);
+  const lats=[...new Set(hourData.map(r=>r.lat))].sort((a,b)=>a-b);
+  const w=lons.length,h=lats.length,U=new Float32Array(w*h),V=new Float32Array(w*h),valid=new Uint8Array(w*h);
+  const lonIdx=new Map(lons.map((v,i)=>[v,i])),latIdx=new Map(lats.map((v,i)=>[v,i]));
+  for(const r of hourData){
+    const li=latIdx.get(r.lat),lo=lonIdx.get(r.lon);
+    if(li==null||lo==null) continue;
+    const i=li*w+lo;
+    U[i]=r.u10||0;V[i]=r.v10||0;valid[i]=1;
+  }
+  const key=w+'x'+h+':'+lons[0]+','+lats[0];
+  if(windParticlesGrid && windParticlesGrid.__key===key){
+    windParticlesGrid.U=U;windParticlesGrid.V=V;
+    return; // same shape: keep particles moving, just update vectors
+  }
+  windParticlesGrid={minLon:lons[0],maxLon:lons[lons.length-1],minLat:lats[0],maxLat:lats[lats.length-1],width:w,height:h,U,V,valid,__key:key};
+}
+
+function updateLayerVisibility(){
+  const layers={C:['grid-cloud-heat'],T:['grid-temp-heat'],W:[],R:['grid-prec-heat']};
+  Object.entries(layers).forEach(([k,ids])=>{
+    ids.forEach(id=>{if(map.getLayer(id))map.setLayoutProperty(id,'visibility',activeLayers[k]?'visible':'none');});
+  });
+  map.triggerRepaint();
+}
+
+/*-------------- layer toggle--------------*/
+document.querySelectorAll('.layer-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const layer=btn.dataset.layer;
+    activeLayers[layer]=!activeLayers[layer];
+    btn.classList.toggle('on',activeLayers[layer]);
+    updateLayerVisibility();
+  });
+});
+
+/*-------------- slider & play--------------*/
+document.getElementById('slider').addEventListener('input', e=>setMapHour(+e.target.value));
+document.getElementById('playBtn').addEventListener('click',()=>{
+  playing=!playing;
+  document.getElementById('playBtn').textContent=playing?'⏸':'▶';
+  if(playing) playTimer=setInterval(()=>{
+    let next=selectedHourIdx+1;
+    if(next>=gridHours.length) next=0;
+    setMapHour(next);
+  },800);
+  else clearInterval(playTimer);
+});
+
+/*-------------- init--------------*/
+map.on('load',async()=>{
+  await loadCities();
+  loadGrid();
+});
+
+/*-------------- debug overlay (use ?debug=1)--------------*/
+window.__errs=[];
+window.onerror=function(m,s,l,c){window.__errs.push(String(m).slice(0,120)+'@'+l+':'+c);};
+if(new URLSearchParams(location.search).has('debug')){
+  const dbg=document.createElement('div');
+  dbg.id='dbgbox';
+  dbg.style.cssText='position:fixed;top:44px;right:10px;z-index:9999;background:rgba(0,0,0,.85);color:#7df;font:11px monospace;padding:8px;border-radius:6px;white-space:pre;pointer-events:none;max-width:480px';
+  document.body.appendChild(dbg);
+  function diag(){
+    let t='';
+    try{t+='gridAll='+gridAll.length+' hours='+gridHours.length+'\n';}catch(e){}
+    try{t+='layers='+(map.getStyle().layers||[]).map(l=>l.id).join(',')+'\n';}catch(e){t+='map ERR '+e+'\n';}
+    t+='active='+JSON.stringify(activeLayers)+'\n';
+    const sc=s=>{try{const d=map.getSource(s)?._data;return d?(d.features||[]).length:'no-src';}catch(e){return 'ERR';}};
+    t+='src temp='+sc('grid-temp')+' prec='+sc('grid-prec')+' cloud='+sc('grid-cloud')+'\n';
+    t+='windCanvas=yes windActive='+activeLayers.W+'\n';
+    try{
+      const c=windCanv;
+      if(c&&c.width){const d=windCtx.getImageData(0,0,c.width,c.height).data;let nz=0;for(let i=3;i<d.length;i+=4)if(d[i]>20)nz++;t+='windPx='+nz+'\n';}
+      else t+='windPx=small\n';
+    }catch(e){t+='windPx ERR '+e+'\n';}
+    t+='errs='+(window.__errs.join(' | ')||'none')+'\n';
+    dbg.textContent=t;
+  }
+  setInterval(diag,700);
+}
+</script>
+</body>
+</html>

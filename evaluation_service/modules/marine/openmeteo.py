@@ -8,10 +8,12 @@ independent source of truth to compare against the CMEMS coastal stations.
 """
 import threading
 import time
+from datetime import datetime, timezone
 import requests
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from evaluation_service.core.logger import get_logger
+from evaluation_service.modules.marine.repository import MarineRepository
 
 logger = get_logger()
 
@@ -55,14 +57,9 @@ _cache: Dict[str, object] = {}
 _lock = threading.Lock()
 
 
-def get_deep_sea_waves(max_age_sec: int = 1200) -> tuple[bool, str, List[Dict]]:
-    """Return latest wave state at each offshore point, using short TTL cache."""
-    global _cache
-    now = time.time()
-    with _lock:
-        if _cache and now - _cache.get('ts', 0) < max_age_sec:
-            return True, f"Open-Meteo deep-sea waves (cache, {len(_cache['rows'])} pts)", _cache['rows']
-
+def _fetch_rows() -> List[Dict]:
+    """Query Open-Meteo for every grid point; returns rows with `time` stamps."""
+    stamp = datetime.now(timezone.utc).isoformat()
     rows = []
     for lat, lon in GRID:
         try:
@@ -77,7 +74,7 @@ def get_deep_sea_waves(max_age_sec: int = 1200) -> tuple[bool, str, List[Dict]]:
                 continue
             cur = payload.get('current', {})
             rows.append({
-                'lat': lat, 'lon': lon,
+                'time': stamp, 'lat': lat, 'lon': lon,
                 'wave_height': cur.get('wave_height'),
                 'wave_period': cur.get('wave_period'),
                 'wave_direction': cur.get('wave_direction'),
@@ -85,8 +82,20 @@ def get_deep_sea_waves(max_age_sec: int = 1200) -> tuple[bool, str, List[Dict]]:
             })
         except Exception as e:
             logger.warning(f"Open-Meteo point ({lat},{lon}) failed: {e}", module='OPENMETEO')
-            rows.append({'lat': lat, 'lon': lon, 'wave_height': None,
+            rows.append({'time': stamp, 'lat': lat, 'lon': lon, 'wave_height': None,
                          'wave_period': None, 'wave_direction': None, 'src': 'open-meteo'})
+    return rows
+
+
+def get_deep_sea_waves(max_age_sec: int = 1200) -> tuple[bool, str, List[Dict]]:
+    """Return latest wave state at each offshore point, using short TTL cache."""
+    global _cache
+    now = time.time()
+    with _lock:
+        if _cache and now - _cache.get('ts', 0) < max_age_sec:
+            return True, f"Open-Meteo deep-sea waves (cache, {len(_cache['rows'])} pts)", _cache['rows']
+
+    rows = _fetch_rows()
 
     valid = [pt for pt in rows if pt['wave_height'] is not None]
     with _lock:
@@ -96,3 +105,45 @@ def get_deep_sea_waves(max_age_sec: int = 1200) -> tuple[bool, str, List[Dict]]:
     message = (f"Open-Meteo deep-sea waves ({len(valid)}/{len(rows)} pts, "
                f"max Hs {max(p['wave_height'] for p in valid):.2f} m)")
     return True, message, rows
+
+
+def collect_and_save() -> tuple[bool, str, Optional[str]]:
+    """Fetch, persist, and prune a fresh deep-sea wave snapshot (scheduled)."""
+    global _cache
+    try:
+        rows = _fetch_rows()
+        valid = [pt for pt in rows if pt['wave_height'] is not None]
+        repo = MarineRepository()
+        count = repo.save_waves(rows)
+        repo.clear_older_than('marine_waves', days=3)
+        with _lock:
+            _cache = {'ts': time.time(), 'rows': rows}
+        if not valid:
+            return False, "Open-Meteo deep-sea waves unavailable (no valid points)", None
+        message = (f"Saved {count} deep-sea wave points "
+                   f"({len(valid)} valid, max Hs {max(p['wave_height'] for p in valid):.2f} m)")
+        return True, message, stamp_time(rows)
+    except Exception as e:
+        logger.error(f"Failed to collect deep-sea waves: {e}", module='OPENMETEO', exc_info=True)
+        return False, str(e), None
+
+
+def get_saved_waves(max_age_hours: int = 6) -> tuple[bool, str, List[Dict]]:
+    """Return the most-recent persisted Open-Meteo snapshot, if fresh."""
+    try:
+        repo = MarineRepository()
+        rows = repo.get_latest_waves(max_age_hours=max_age_hours)
+        if not rows:
+            return False, "No Open-Meteo deep-sea waves stored yet", []
+        return True, f"Open-Meteo deep-sea waves (db, {len(rows)} pts)", rows
+    except Exception as e:
+        logger.error(f"Failed to read deep-sea waves: {e}", module='OPENMETEO', exc_info=True)
+        return False, str(e), []
+
+
+def stamp_time(rows: List[Dict]) -> Optional[str]:
+    """Extract the shared snapshot timestamp from a row set."""
+    for r in rows:
+        if r.get('time'):
+            return r['time']
+    return None

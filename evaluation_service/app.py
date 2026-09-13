@@ -6,6 +6,7 @@ from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 import os
 import sys
+from datetime import datetime, timedelta, timezone
 
 # Add parent directory to path for package imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -34,6 +35,8 @@ from evaluation_service.modules.historical.importer import HistoricalImporter
 from evaluation_service.modules.chatbot.general_chat import GeneralChatbot
 from evaluation_service.modules.chatbot.medical_chat import MedicalChatbot
 from evaluation_service.modules.analysis.summarizer import AnalysisSummarizer
+from evaluation_service.modules import forecast as forecast_module
+from evaluation_service.modules.forecast import openmeteo as forecast_openmeteo
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -518,12 +521,26 @@ def evaluate_marine_risk():
 def get_marine_deepsea_waves():
     """Deep-sea wave cross-check from Open-Meteo Marine (free, no key)."""
     try:
-        success, message, rows = marine_openmeteo.get_deep_sea_waves()
-        return jsonify({'status': 'success' if success else 'error',
-                        'message': message, 'data': rows,
-                        'source': 'open-meteo'}), (200 if success else 502)
+        success, message, rows = marine_openmeteo.get_saved_waves()
+        src = 'open-meteo'
+        if not success:
+            success, message, rows = marine_openmeteo.get_deep_sea_waves()
+        valid = [pt for pt in rows if pt.get('wave_height') is not None]
+        return jsonify({'status': 'success' if success and valid else 'error',
+                        'message': message, 'data': rows, 'source': src}), (200 if success else 502)
     except Exception as e:
         logger.error(f"Error getting deep-sea waves: {e}", module='API', exc_info=True)
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@app.route('/api/marine/waves/deepsea/collect', methods=['POST'])
+def collect_marine_deepsea_waves():
+    """Fetch + persist a fresh Open-Meteo deep-sea wave snapshot."""
+    try:
+        success, message, _ = marine_openmeteo.collect_and_save()
+        return jsonify({'status': 'success' if success else 'error', 'message': message}), (200 if success else 400)
+    except Exception as e:
+        logger.error(f"Error collecting deep-sea waves: {e}", module='API', exc_info=True)
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 
@@ -535,6 +552,113 @@ def get_marine_zones():
         return jsonify({'status': 'success', 'data': ZONES}), 200
     except Exception as e:
         logger.error(f"Error getting marine zones: {e}", module='API', exc_info=True)
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+# ---------------------------------------------------------------- forecast
+@app.route('/forecast', methods=['GET'])
+def forecast_page():
+    """Windy-style forecast & historical weather page."""
+    return render_template('forecast.html')
+
+
+@app.route('/api/forecast/cities', methods=['GET'])
+def get_forecast_cities():
+    """List of tracked cities for the picker."""
+    return jsonify({'status': 'success', 'data': forecast_openmeteo.CITIES}), 200
+
+
+@app.route('/api/forecast/<city>', methods=['GET'])
+def get_forecast_city(city):
+    """Latest full forecast (current + hourly + daily) for a city."""
+    try:
+        success, message, payload = forecast_openmeteo.get_city_forecast(city)
+        if not success:
+            return jsonify({'status': 'error', 'message': message}), 502
+        return jsonify({'status': 'success', 'message': message,
+                        'data': {'payload': payload['payload'], 'how': payload['how'],
+                                 'asof': payload.get('asof'), 'city': city}}), 200
+    except Exception as e:
+        logger.error(f"Error getting forecast for {city}: {e}", module='API', exc_info=True)
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@app.route('/api/forecast/<city>/collect', methods=['POST'])
+def collect_forecast_city(city):
+    """Force a fresh Open-Meteo forecast collection for a city."""
+    try:
+        success, message, _ = forecast_openmeteo.collect_city(city)
+        return jsonify({'status': 'success' if success else 'error', 'message': message}), (200 if success else 400)
+    except Exception as e:
+        logger.error(f"Error collecting forecast for {city}: {e}", module='API', exc_info=True)
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@app.route('/api/forecast/<city>/history', methods=['GET'])
+def get_forecast_history(city):
+    """ERA5 historical daily series for a city."""
+    try:
+        start = request.args.get('from', (datetime.now(timezone.utc) - timedelta(days=30)).strftime('%Y-%m-%d'))
+        end = request.args.get('to', datetime.now(timezone.utc).strftime('%Y-%m-%d'))
+        success, message, rows = forecast_openmeteo.get_history(city, start, end)
+        return jsonify({'status': 'success' if success else 'error',
+                        'message': message, 'data': rows}), (200 if success else 400)
+    except Exception as e:
+        logger.error(f"Error getting history for {city}: {e}", module='API', exc_info=True)
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@app.route('/api/forecast/<city>/climate', methods=['GET'])
+def get_forecast_climate(city):
+    """Monthly normals, all-time records and coverage for a city."""
+    try:
+        success, message, clim = forecast_openmeteo.get_climate(city)
+        return jsonify({'status': 'success' if success else 'error',
+                        'message': message, 'data': clim}), (200 if success else 400)
+    except Exception as e:
+        logger.error(f"Error getting climate for {city}: {e}", module='API', exc_info=True)
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@app.route('/api/forecast/<city>/anomaly', methods=['GET'])
+def get_forecast_anomaly(city):
+    """Monthly temperature/precip anomaly for a year (default: current)."""
+    try:
+        year = request.args.get('year', datetime.now(timezone.utc).year, type=int)
+        success, message, data = forecast_openmeteo.get_anomaly(city, year)
+        return jsonify({'status': 'success' if success else 'error',
+                        'message': message, 'data': data}), (200 if success else 400)
+    except Exception as e:
+        logger.error(f"Error getting anomaly for {city}: {e}", module='API', exc_info=True)
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@app.route('/api/forecast/grid', methods=['GET'])
+def get_forecast_grid():
+    """Gridded playback layer. ?var=temperature|precipitation|wind&hour=ISO &all=1"""
+    try:
+        var = request.args.get('var', 'temperature')
+        hour = request.args.get('hour')
+        if request.args.get('all') == '1' or not hour:
+            success, message, data = forecast_openmeteo.get_grid_all(var)
+        else:
+            success, message, data = forecast_openmeteo.get_grid_var(var, hour)
+        return jsonify({'status': 'success' if success else 'error',
+                        'message': message, 'data': data}), (200 if success else 400)
+    except Exception as e:
+        logger.error(f"Error getting forecast grid: {e}", module='API', exc_info=True)
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@app.route('/api/forecast/grid/collect', methods=['POST'])
+def collect_forecast_grid():
+    """Fetch + persist a fresh gridded playback snapshot."""
+    try:
+        success, message, n = forecast_openmeteo.collect_grid()
+        return jsonify({'status': 'success' if success else 'error',
+                        'message': message, 'count': n}), (200 if success else 400)
+    except Exception as e:
+        logger.error(f"Error collecting forecast grid: {e}", module='API', exc_info=True)
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 @app.route('/api/news', methods=['GET'])
@@ -1478,6 +1602,20 @@ def start_scheduler():
         scheduler.add_job('marine_risk',
                           marine_collector.collect_risk_and_save,
                           interval_minutes=30)
+        offset += 2
+        scheduler.add_job('marine_deepsea_waves',
+                          marine_openmeteo.collect_and_save,
+                          interval_minutes=60, at_time=f'00:{offset:02d}')
+
+        # Forecast: each tracked city + the gridded playback layer, hourly.
+        # City collects are a single request each; no top-of-hour burst needed.
+        for fc_city in forecast_openmeteo.CITIES:
+            scheduler.add_job(f'forecast_{fc_city["name"]}',
+                              lambda n=fc_city["name"]: forecast_openmeteo.collect_city(n),
+                              interval_minutes=60)
+        scheduler.add_job('forecast_grid',
+                          forecast_openmeteo.collect_grid,
+                          interval_minutes=60)
 
         scheduler.start()
         logger.info(f"Scheduler started with {len(scheduler.get_jobs())} jobs", module='MAIN')
