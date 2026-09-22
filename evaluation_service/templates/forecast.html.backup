@@ -28,7 +28,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Ro
 
 /* tabs */
 .tabs{position:fixed;top:12px;right:12px;z-index:20;display:flex;gap:4px}
-.tab-btn{background:rgba(15,18,32,.85);border:1px solid #2a3152;color:#7a8196;padding:7px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;backdrop-filter:blur(4px);transition:.15s}
+.tab-btn{background:rgba(15,18,32,.85);border:1px solid #2a3152;color:#7a8196;padding:7px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;backdrop-filter:blur(4px);transition:background-color .18s ease,border-color .18s ease,color .18s ease}
 .tab-btn:hover{border-color:#45d0ff;color:#cfd4e3}
 .tab-btn.on{background:#0ea5e9;color:#04121f;border-color:#0ea5e9}
 
@@ -44,7 +44,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Ro
 .pbar input[type=range]{flex:1;height:4px;accent-color:#0ea5e9}
 .pbar .time-label{font-size:12px;color:#a0aec0;min-width:140px;text-align:center}
 .layer-btns{display:flex;gap:4px}
-.layer-btn{width:28px;height:28px;border-radius:6px;border:1px solid #2a3152;background:#181c2e;color:#7a8196;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.layer-btn{width:28px;height:28px;border-radius:6px;border:1px solid #2a3152;background:#181c2e;color:#7a8196;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background-color .16s ease,border-color .16s ease,color .16s ease}
 .layer-btn.on{border-color:#0ea5e9;color:#0ea5e9;background:#0b1f35}
 
 /* forecast cards */
@@ -74,13 +74,30 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Ro
 
 /* status/loading */
 .status-msg{font-size:11px;color:#5b6378;text-align:center;padding:12px}
-.pulse{animation:pulse 1s infinite}
-@keyframes pulse{0%{opacity:1}50%{opacity:.4}100%{opacity:1}}
+.pulse{animation:pulse 1.8s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.72}}
 .bmtoggle{position:fixed;bottom:12px;left:12px;z-index:20;display:flex;gap:4px}
 .bm-btn{background:rgba(15,18,32,.9);border:1px solid #2a3152;color:#7a8196;padding:6px 11px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;backdrop-filter:blur(4px)}
 .bm-btn.on{border-color:#0ea5e9;color:#0ea5e9;background:#0b1f35}
 .layer-btn.clouds{background:#181c2e;color:#9fb3d1;border-color:#33507a}
 .layer-btn.clouds.on{border-color:#93c5fd;color:#93c5fd;background:#0f2035}
+.layer-btn.temp{background:#181c2e;color:#fb923c;border-color:#3d2810}
+.layer-btn.temp.on{border-color:#fb923c;color:#fb923c;background:#1f150a}
+.layer-btn.rain{background:#181c2e;color:#22d3ee;border-color:#0e3d4a}
+.layer-btn.rain.on{border-color:#22d3ee;color:#22d3ee;background:#0a1f26}
+.legend{position:fixed;bottom:80px;left:12px;z-index:20;background:rgba(15,18,32,.85);border:1px solid #2a3152;border-radius:8px;padding:10px 12px;font-size:10px;color:#b9c0d4;backdrop-filter:blur(4px);max-width:180px}
+.legend h4{font-size:10px;color:#45d0ff;margin-bottom:6px}
+.legend .grad{height:8px;width:150px;border-radius:3px;margin:3px 0}
+.legend .grad-temp{background:linear-gradient(90deg,#3b82f6,#facc15,#fb923c,#ef4444)}
+.legend .grad-rain{background:linear-gradient(90deg,#22d3ee,#06b6d4,#0891b2,#0e7490)}
+.legend .grad-cloud{background:linear-gradient(90deg,#94a3b8,#cbd5e1,#e2e8f0,#fff)}
+.legend .lg-row{margin-bottom:6px}
+.legend .lg-label{font-size:9px;color:#8b93a8;margin-bottom:2px}
+.legend .lg-scale{display:flex;justify-content:space-between;font-size:8px;color:#6b7280}
+@media (prefers-reduced-motion: reduce){
+    .pulse{animation:none}
+    .tab-btn,.layer-btn,.bm-btn{transition:none}
+}
 </style>
 </head>
 <body>
@@ -121,9 +138,9 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Ro
   <div class="time-label" id="timeLabel">—</div>
   <div class="layer-btns">
     <button class="layer-btn clouds on" data-layer="C" title="Clouds">C</button>
-    <button class="layer-btn on" data-layer="T" title="Temperature">T</button>
+    <button class="layer-btn temp on" data-layer="T" title="Temperature">T</button>
     <button class="layer-btn on" data-layer="W" title="Wind">W</button>
-    <button class="layer-btn" data-layer="R" title="Precipitation">R</button>
+    <button class="layer-btn rain" data-layer="R" title="Precipitation">R</button>
   </div>
 </div>
 
@@ -132,8 +149,31 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Ro
   <button class="bm-btn" data-basemap="satellite">🛰 Sat</button>
 </div>
 
+<div class="legend" id="legend">
+  <h4>Layer colour keys</h4>
+  <div class="lg-row">
+    <div class="lg-label">Temperature (°C)</div>
+    <div class="grad grad-temp"></div>
+    <div class="lg-scale"><span>10°</span><span>20°</span><span>30°</span><span>40°+</span></div>
+  </div>
+  <div class="lg-row">
+    <div class="lg-label">Precipitation (mm)</div>
+    <div class="grad grad-rain"></div>
+    <div class="lg-scale"><span>0</span><span>5</span><span>10</span><span>20+</span></div>
+  </div>
+  <div class="lg-row">
+    <div class="lg-label">Cloud cover (%)</div>
+    <div class="grad grad-cloud"></div>
+    <div class="lg-scale"><span>0%</span><span>40%</span><span>70%</span><span>100%</span></div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5.9.0/dist/maplibre-gl.js"></script>
 <script>
+const prefersReducedMotion = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const CITY_FLY_DURATION = prefersReducedMotion ? 0 : 900;
+const PLAYBACK_INTERVAL = prefersReducedMotion ? 2000 : 1400;
+
 const map = new maplibregl.Map({
   container: 'map', center: [18.0, 32.5], zoom: 6,
   attributionControl: {compact: true, position: 'bottom-left'},
@@ -227,7 +267,7 @@ async function selectCity(name){
   document.getElementById('citySelect').value=name;
   highlightMarker(name);
   const c=CITIES.find(x=>x.name===name);
-  if(c) map.flyTo({center:[c.lon,c.lat],zoom:9,duration:600});
+  if(c) map.flyTo({center:[c.lon,c.lat],zoom:9,duration:CITY_FLY_DURATION});
   showPanel(true);
   loadForecastPanel();
 }
@@ -329,6 +369,7 @@ function renderHistoryChart(){
       {type:'bar',label:'Rain mm',data:prec,backgroundColor:'rgba(96,165,250,.35)',yAxisID:'y1'}
     ]},options:{responsive:true,maintainAspectRatio:false,
     plugins:{legend:{labels:{color:'#7a8196',font:{size:10}}},title:{display:false}},
+    animation:{duration:prefersReducedMotion?0:350,easing:'easeOutQuad'},
     scales:{x:{ticks:{color:'#5b6378',font:{size:8},maxTicksLimit:12},grid:{color:'#1f2437'}},
       y:{position:'left',ticks:{color:'#7a8196',font:{size:9}},grid:{color:'#1f2437'}},
       y1:{position:'right',ticks:{color:'#60a5fa',font:{size:9}},grid:{display:false}}
@@ -355,6 +396,7 @@ async function loadAnomaly(){
          borderRadius:4}
       ]},options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{display:false},title:{display:true,text:`Temperature anomaly vs normals (${year})`,color:'#7a8196',font:{size:10}}},
+      animation:{duration:prefersReducedMotion?0:350,easing:'easeOutQuad'},
       scales:{x:{ticks:{color:'#5b6378',font:{size:9}},grid:{color:'#1f2437'}},
         y:{ticks:{color:'#7a8196',font:{size:9}},grid:{color:'#1f2437'}}
       }}});
@@ -431,24 +473,24 @@ function initGridLayers(){
     map.addLayer({id:'grid-temp-heat',type:'heatmap',source:TEMP_SOURCE,
       layout:{visibility:'visible'},
       paint:{'heatmap-weight':['interpolate',['linear'],['get','val'],10,0,20,0.3,30,0.6,40,0.9,46,1],
-        'heatmap-intensity':0.65,
-        'heatmap-color':['interpolate',['linear'],['heatmap-density'],0,'rgba(96,165,250,0)',0.35,'#3b82f6',0.6,'#facc15',0.85,'#fb923c',1,'#ef4444'],
-        'heatmap-radius':['interpolate',['linear'],['zoom'],4,10,7,22],'heatmap-opacity':0.6}});
+        'heatmap-intensity':0.7,
+        'heatmap-color':['interpolate',['linear'],['heatmap-density'],0,'rgba(59,130,246,0)',0.25,'#3b82f6',0.5,'#facc15',0.75,'#fb923c',1,'#ef4444'],
+        'heatmap-radius':['interpolate',['linear'],['zoom'],4,12,7,24],'heatmap-opacity':0.55}});
   if(!map.getLayer('grid-prec-heat'))
     map.addLayer({id:'grid-prec-heat',type:'heatmap',source:PREC_SOURCE,
       layout:{visibility:'none'},
-      paint:{'heatmap-weight':['interpolate',['linear'],['get','prec'],0,0,5,0.5,20,1],
-        'heatmap-intensity':0.8,
-        'heatmap-color':['interpolate',['linear'],['heatmap-density'],0,'rgba(96,165,250,0)',0.3,'#60a5fa',0.7,'#3b82f6',1,'#1d4ed8'],
-        'heatmap-radius':['interpolate',['linear'],['zoom'],4,8,7,18],'heatmap-opacity':0.65}});
-  // clouds render on top (Zoom Earth style)
+      paint:{'heatmap-weight':['interpolate',['linear'],['get','prec'],0,0,2,0.3,5,0.6,10,0.8,20,1],
+        'heatmap-intensity':1.2,
+        'heatmap-color':['interpolate',['linear'],['heatmap-density'],0,'rgba(34,211,238,0)',0.2,'#22d3ee',0.5,'#06b6d4',0.8,'#0891b2',1,'#0e7490'],
+        'heatmap-radius':['interpolate',['linear'],['zoom'],4,10,7,20],'heatmap-opacity':0.7}});
+  // clouds render on top with distinct white/gray styling
   if(!map.getLayer('grid-cloud-heat'))
     map.addLayer({id:'grid-cloud-heat',type:'heatmap',source:CLOUD_SOURCE,
       layout:{visibility:'visible'},
-      paint:{'heatmap-weight':['interpolate',['linear'],['get','cloud'],0,0,30,0.15,55,0.4,70,0.7,85,1.05],
-        'heatmap-intensity':1.0,
-        'heatmap-color':['interpolate',['linear'],['heatmap-density'],0,'rgba(120,148,190,0)',0.3,'rgba(160,182,216,0.45)',0.55,'rgba(205,220,242,0.72)',0.75,'rgba(232,240,252,0.9)',1,'rgba(250,253,255,1)'],
-        'heatmap-radius':['interpolate',['linear'],['zoom'],4,12,7,26],'heatmap-opacity':0.72}});
+      paint:{'heatmap-weight':['interpolate',['linear'],['get','cloud'],0,0,20,0.1,40,0.3,60,0.5,80,0.8,100,1],
+        'heatmap-intensity':1.1,
+        'heatmap-color':['interpolate',['linear'],['heatmap-density'],0,'rgba(148,163,184,0)',0.25,'rgba(148,163,184,0.3)',0.5,'rgba(203,213,225,0.55)',0.75,'rgba(226,232,240,0.8)',1,'rgba(255,255,255,0.95)'],
+        'heatmap-radius':['interpolate',['linear'],['zoom'],4,14,7,28],'heatmap-opacity':0.65}});
 }
 
 async function loadGrid(){
@@ -490,92 +532,262 @@ function setMapHour(idx){
   rebuildWindGrid(hourData);
 }
 
-/*-------------- wind arrows (static, speed-colored)--------------*/
+/*-------------- wind animated particles--------------*/
 let windParticlesGrid=null;
-const windCanv=document.createElement('canvas');
-windCanv.id='wind-canvas';
-windCanv.style.cssText='position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:2';
-const windCtx=windCanv.getContext('2d');
-function windArrowColor(spd){
-  if(spd<1.5)return'#57c7ff';else if(spd<3)return'#22d3ee';else if(spd<5)return'#4ade80';
-  else if(spd<8)return'#a3e635';else if(spd<11)return'#fbbf24';return'#f87171';
+let windAnimVisible = !prefersReducedMotion;
+const WIND_NUM_PARTICLES = 2800;
+const WIND_PARTICLE_FRAME_MS = 32;
+let windParticleRedrawTimer = null;
+let windParticleLayer = null;
+
+// Wind color palette based on speed (m/s)
+const WIND_PALETTE=[];
+for(let b=0;b<14;b++){
+  const t=b/13;
+  if(t<0.2) WIND_PALETTE.push('#57c7ff');
+  else if(t<0.4) WIND_PALETTE.push('#22d3ee');
+  else if(t<0.6) WIND_PALETTE.push('#4ade80');
+  else if(t<0.8) WIND_PALETTE.push('#a3e635');
+  else if(t<0.9) WIND_PALETTE.push('#fbbf24');
+  else WIND_PALETTE.push('#f87171');
 }
-function drawArrow(ctx,x,y,dx,dy,color,L){
-  const len=Math.hypot(dx,dy)||1, ux=dx/len, uy=dy/len;
-  ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=1.8;
-  ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+ux*L,y+uy*L);ctx.stroke();
-  const hx=x+ux*L, hy=y+uy*L, a1=(25*Math.PI)/180;
-  const cx=Math.cos(a1),sx=Math.sin(a1);
-  ctx.beginPath();
-  ctx.moveTo(hx,hy);
-  ctx.lineTo(hx-L*0.38*(ux*cx-uy*sx), hy-L*0.38*(ux*sx+uy*cx));
-  ctx.moveTo(hx,hy);
-  ctx.lineTo(hx-L*0.38*(ux*cx+uy*sx), hy+L*0.38*(ux*sx-uy*cx));
-  ctx.stroke();
+function windSpeedColor(spd){
+  const idx=Math.min(13, Math.floor(spd/1.5));
+  return WIND_PALETTE[idx];
 }
-function windDraw(){
-  const g=windParticlesGrid;
-  const cssW=map.getContainer().clientWidth, cssH=map.getContainer().clientHeight;
-  if(!cssW||!cssH) return;
-  const dpr=window.devicePixelRatio||1;
-  if(windCanv.width!==cssW*dpr||windCanv.height!==cssH*dpr){windCanv.width=cssW*dpr;windCanv.height=cssH*dpr;}
-  windCtx.setTransform(dpr,0,0,dpr,0,0);
-  windCtx.clearRect(0,0,cssW,cssH);
-  if(!activeLayers.W||!g) return;
-  const zoom=map.getZoom();
-  const base=Math.max(9, Math.min(20, 6+zoom*0.7)); // pixel scale for arrow length
-  for(let yi=0;yi<g.height;yi+=2){
-    for(let xi=0;xi<g.width;xi+=2){
-      const i=yi*g.width+xi;
-      if(!g.valid[i]) continue;
-      const spd=Math.hypot(g.U[i],g.V[i]);
-      const L=Math.max(8,Math.min(34,base+spd*1.1));
-      const p=map.project([g.minLon+(g.maxLon-g.minLon)*xi/(g.width-1), g.minLat+(g.maxLat-g.minLat)*yi/(g.height-1)]);
-      if(p.x<-8||p.x>cssW+8||p.y<-8||p.y>cssH+8) continue;
-      let dx=g.U[i], dy=g.V[i]; // u,v are the flow vector (direction wind blows toward)
-      const fl=Math.hypot(dx,dy)||1;
-      dx/=fl;dy/=fl;
-      drawArrow(windCtx,p.x,p.y,dx,dy,windArrowColor(spd),L);
+
+// function sampleWindCurrent(grid, lon, lat) { ... } // Not used for arrows only
+
+// const WindParticles = { ... } // Disabled - using arrows only
+  id:'wind-anim', type:'custom',
+  onAdd(map){
+    this.map=map;
+    windParticleLayer=this;
+    const canvas=document.createElement('canvas');
+    canvas.style.position='absolute'; canvas.style.top='0'; canvas.style.left='0';
+    canvas.style.pointerEvents='none'; canvas.style.width='100%'; canvas.style.height='100%';
+    map.getCanvasContainer().appendChild(canvas);
+    this.canvas=canvas; this.ctx=canvas.getContext('2d');
+    this.xs=new Float32Array(WIND_NUM_PARTICLES);
+    this.ys=new Float32Array(WIND_NUM_PARTICLES);
+    this._lastFrame=0;
+    this._animating=false;
+    this.seed();
+    this.startAnimation();
+  },
+  startAnimation(){
+    if(this._animating) return;
+    this._animating=true;
+    const animate=()=>{
+      if(!this._animating || !this.map) return;
+      if(windAnimVisible && windParticlesGrid && activeLayers.W){
+        this.map.triggerRepaint();
+      }
+      this._animTimer=requestAnimationFrame(animate);
+    };
+    this._animTimer=requestAnimationFrame(animate);
+  },
+  stopAnimation(){
+    this._animating=false;
+    if(this._animTimer){
+      cancelAnimationFrame(this._animTimer);
+      this._animTimer=null;
+    }
+  },
+  seed(){
+    const g=windParticlesGrid;
+    if(!g) return;
+    for(let i=0;i<WIND_NUM_PARTICLES;i++){
+      let lon,lat,n=0;
+      do { lon=g.minLon+Math.random()*(g.maxLon-g.minLon);
+           lat=g.minLat+Math.random()*(g.maxLat-g.minLat); }
+      while(sampleWindCurrent(g,lon,lat)===null && ++n<10);
+      this.xs[i]=lon; this.ys[i]=lat;
+    }
+  },
+  _prepareCanvas(){
+    const container=this.map.getContainer();
+    if(!container) return false;
+    const dpr=window.devicePixelRatio||1;
+    const cssW=container.clientWidth, cssH=container.clientHeight;
+    if(!cssW||!cssH) return false;
+    if(this.canvas.width!==cssW*dpr||this.canvas.height!==cssH*dpr){
+      this.canvas.width=cssW*dpr; this.canvas.height=cssH*dpr;
+      this.ctx.setTransform(dpr,0,0,dpr,0,0);
+    }
+    this.ctx.globalCompositeOperation='source-over';
+    return true;
+  },
+  _clearFrame(){
+    if(!this._prepareCanvas()) return;
+    const container=this.map.getContainer();
+    if(!container) return;
+    const cssW=container.clientWidth, cssH=container.clientHeight;
+    if(!cssW||!cssH) return;
+    this.ctx.clearRect(0,0,cssW,cssH);
+  },
+  onRemove(){
+    this.stopAnimation();
+    if(windParticleRedrawTimer){ clearTimeout(windParticleRedrawTimer); windParticleRedrawTimer=null; }
+    if(windParticleLayer===this) windParticleLayer=null;
+    if(this.canvas&&this.canvas.parentNode) this.canvas.parentNode.removeChild(this.canvas);
+    this.map=null; this.canvas=null; this.ctx=null;
+  },
+  render(){
+    if(!this.map||!this.canvas||!this.ctx) return;
+    const now=performance.now();
+    if(!windAnimVisible||!windParticlesGrid||!activeLayers.W){ this._clearFrame(); return; }
+    if(prefersReducedMotion){
+      this._clearFrame();
+      this._drawFrame(0,false);
+      return;
+    }
+    if(document.hidden) return;
+    if(this._lastFrame && now-this._lastFrame<WIND_PARTICLE_FRAME_MS){
+      if(!windParticleRedrawTimer){
+        const layer=this;
+        const delay=WIND_PARTICLE_FRAME_MS-(now-this._lastFrame);
+        windParticleRedrawTimer=setTimeout(()=>{
+          windParticleRedrawTimer=null;
+          if(windParticleLayer!==layer||!layer.map||document.hidden) return;
+          layer.map.triggerRepaint();
+        },delay);
+      }
+      return;
+    }
+    const elapsed=this._lastFrame?now-this._lastFrame:16.7;
+    this._lastFrame=now;
+    try{ this._drawFrame(Math.min(2,Math.max(0.5,elapsed/16.7))); }catch(e){}
+  },
+  _drawFrame(frameScale=1,fade=true){
+    const g=windParticlesGrid, map=this.map;
+    const canvas=this.canvas, ctx=this.ctx;
+    if(!this._prepareCanvas()) return;
+    const cssW=map.getContainer().clientWidth, cssH=map.getContainer().clientHeight;
+    if(!windAnimVisible||!g){ ctx.clearRect(0,0,cssW,cssH); return; }
+    
+    // Simple clear without fade
+    ctx.clearRect(0,0,cssW,cssH);
+    ctx.globalCompositeOperation='source-over';
+    
+    const step=Math.min(0.15, 0.04*Math.pow(2, 6-map.getZoom()))*frameScale;
+    for(let i=0;i<WIND_NUM_PARTICLES;i++){
+      let lon=this.xs[i], lat=this.ys[i];
+      let c=sampleWindCurrent(g,lon,lat);
+      if(c===null){
+        lon=g.minLon+Math.random()*(g.maxLon-g.minLon);
+        lat=g.minLat+Math.random()*(g.maxLat-g.minLat);
+        c=sampleWindCurrent(g,lon,lat);
+        if(c===null){ this.xs[i]=lon; this.ys[i]=lat; continue; }
+      }
+      lon += c.u*step; lat += c.v*step;
+      if(lon<g.minLon) lon=g.maxLon; else if(lon>g.maxLon) lon=g.minLon;
+      if(lat<g.minLat) lat=g.maxLat; else if(lat>g.maxLat) lat=g.minLat;
+      this.xs[i]=lon; this.ys[i]=lat;
+      const p=map.project([lon,lat]);
+      if(p.x< -2||p.x>cssW+2||p.y< -2||p.y>cssH+2) continue;
+      const speed=Math.hypot(c.u,c.v);
+      ctx.fillStyle=windSpeedColor(speed);
+      const size=Math.min(2.5, 1.2+speed*0.15);
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,size,0,Math.PI*2);
+      ctx.fill();
     }
   }
-}
-map.on('load',()=>{
-  const container=map.getCanvasContainer();
-  if(container) container.appendChild(windCanv);
-});
-map.on('move',windDraw);
-map.on('resize',windDraw);
-map.once('load',()=>{
-  map.getCanvasContainer().appendChild(windCanv);
-  (function loop(){requestAnimationFrame(loop);try{windDraw();}catch(e){}}());
+};
+document.addEventListener('visibilitychange', ()=>{
+  if(!document.hidden && windParticleLayer?.map && windAnimVisible) windParticleLayer.map.triggerRepaint();
 });
 
+function windDrawFrame(){
+  if(!windPrepareCanvas()) return;
+  const container=map.getContainer();
+  const cssW=container.clientWidth, cssH=container.clientHeight;
+  const g=windParticlesGrid;
+
+  if(!windAnimVisible||!activeLayers.W||!g){
+    windCtx.clearRect(0,0,cssW,cssH);
+    return;
+  }
+
+  // Clear and redraw
+  windCtx.clearRect(0,0,cssW,cssH);
+  windCtx.globalCompositeOperation='source-over';
+
+  const step=Math.min(0.18, 0.05*Math.pow(2, 6-map.getZoom()));
+  for(let i=0;i<WIND_NUM_PARTICLES;i++){
+    let lon=windParticleXs[i], lat=windParticleYs[i];
+    let c=sampleWindCurrent(g,lon,lat);
+    if(c===null){
+      lon=g.minLon+Math.random()*(g.maxLon-g.minLon);
+      lat=g.minLat+Math.random()*(g.maxLat-g.minLat);
+      c=sampleWindCurrent(g,lon,lat);
+      if(c===null){ windParticleXs[i]=lon; windParticleYs[i]=lat; continue; }
+    }
+    lon += c.u*step; lat += c.v*step;
+    if(lon<g.minLon) lon=g.maxLon; else if(lon>g.maxLon) lon=g.minLon;
+    if(lat<g.minLat) lat=g.maxLat; else if(lat>g.maxLat) lat=g.minLat;
+    windParticleXs[i]=lon; windParticleYs[i]=lat;
+    const p=map.project([lon,lat]);
+    if(p.x< -2||p.x>cssW+2||p.y< -2||p.y>cssH+2) continue;
+    const speed=Math.hypot(c.u,c.v);
+    windCtx.fillStyle=windSpeedColor(speed);
+    const size=Math.min(3.0, 1.5+speed*0.2);
+    windCtx.beginPath();
+    windCtx.arc(p.x,p.y,size,0,Math.PI*2);
+    windCtx.fill();
+  }
+}
+
+// Old particle animation functions removed - using arrows only
+// function windRequestFrame() { ... }
+// function windDrawFrame() { ... }
+
 function rebuildWindGrid(hourData){
+  console.log('rebuildWindGrid called with', hourData?.length, 'rows');
   if(!hourData||!hourData.length) return;
-  const lons=[...new Set(hourData.map(r=>r.lon))].sort((a,b)=>a-b);
-  const lats=[...new Set(hourData.map(r=>r.lat))].sort((a,b)=>a-b);
-  const w=lons.length,h=lats.length,U=new Float32Array(w*h),V=new Float32Array(w*h),valid=new Uint8Array(w*h);
-  const lonIdx=new Map(lons.map((v,i)=>[v,i])),latIdx=new Map(lats.map((v,i)=>[v,i]));
-  for(const r of hourData){
-    const li=latIdx.get(r.lat),lo=lonIdx.get(r.lon);
-    if(li==null||lo==null) continue;
-    const i=li*w+lo;
-    U[i]=r.u10||0;V[i]=r.v10||0;valid[i]=1;
+  
+  // Add wind arrows (simpler symbol layer)
+  if(!map.getSource('wind-arrows')){
+    console.log('Adding wind-arrows source and layer');
+    map.addSource('wind-arrows',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+    map.addLayer({id:'wind-arrows',type:'symbol',source:'wind-arrows',
+      layout:{'text-field':['get','arrow'],'text-size':20,'text-rotate':['get','angle'],'text-allow-overlap':true,'text-ignore-placement':true,'text-anchor':'center'},
+      paint:{'text-color':['get','color'],'text-opacity':1}},
+      'grid-prec-heat'  // Add above precipitation layer
+    );
+    console.log('Wind arrows layer added successfully above grid-prec-heat');
+  } else {
+    console.log('Wind-arrows source already exists');
   }
-  const key=w+'x'+h+':'+lons[0]+','+lats[0];
-  if(windParticlesGrid && windParticlesGrid.__key===key){
-    windParticlesGrid.U=U;windParticlesGrid.V=V;
-    return; // same shape: keep particles moving, just update vectors
+  
+  const arrowFeats=hourData.filter((_,i)=>i%1===0).map(r=>{
+    const speed=Math.hypot(r.u10||0,r.v10||0);
+    const angle=(Math.atan2(-(r.v10||0), (r.u10||0))*180/Math.PI+360)%360;
+    return {type:'Feature',geometry:{type:'Point',coordinates:[r.lon,r.lat]},
+      properties:{arrow:'➤',angle:angle,color:windSpeedColor(speed)}};
+  });
+  console.log('Creating', arrowFeats.length, 'arrow features');
+  map.getSource('wind-arrows').setData({type:'FeatureCollection',features:arrowFeats});
+  console.log('Wind arrows data set successfully');
+  
+  // Ensure wind layer is visible
+  if(map.getLayer('wind-arrows')){
+    map.setLayoutProperty('wind-arrows','visibility',activeLayers.W?'visible':'none');
+    console.log('Wind arrows visibility set to:', activeLayers.W?'visible':'none');
   }
-  windParticlesGrid={minLon:lons[0],maxLon:lons[lons.length-1],minLat:lats[0],maxLat:lats[lats.length-1],width:w,height:h,U,V,valid,__key:key};
 }
 
 function updateLayerVisibility(){
-  const layers={C:['grid-cloud-heat'],T:['grid-temp-heat'],W:[],R:['grid-prec-heat']};
+  const layers={C:['grid-cloud-heat'],T:['grid-temp-heat'],W:['wind-arrows'],R:['grid-prec-heat']};
   Object.entries(layers).forEach(([k,ids])=>{
     ids.forEach(id=>{if(map.getLayer(id))map.setLayoutProperty(id,'visibility',activeLayers[k]?'visible':'none');});
   });
-  map.triggerRepaint();
+  const legend=document.getElementById('legend');
+  if(legend){
+    const hasLayers=activeLayers.C||activeLayers.T||activeLayers.R;
+    legend.style.display=hasLayers?'block':'none';
+  }
 }
 
 /*-------------- layer toggle--------------*/
@@ -597,7 +809,7 @@ document.getElementById('playBtn').addEventListener('click',()=>{
     let next=selectedHourIdx+1;
     if(next>=gridHours.length) next=0;
     setMapHour(next);
-  },800);
+  },PLAYBACK_INTERVAL);
   else clearInterval(playTimer);
 });
 
@@ -605,6 +817,25 @@ document.getElementById('playBtn').addEventListener('click',()=>{
 map.on('load',async()=>{
   await loadCities();
   loadGrid();
+  // Wind particle layer disabled - using arrows only
+  // try{ map.addLayer(WindParticles); }catch(e){ console.warn('wind particles:', e); }
+  // Initialize wind animation when grid loads
+  setTimeout(async()=>{
+    // Load wind grid data
+    try{
+      const r=await fetch('/api/forecast/grid?var=wind&all=1');
+      const j=await r.json();
+      if(j.status==='success'&&j.data&&j.data.rows){
+        const firstHour=j.data.hours?.[0]||j.data.rows[0]?.fcst_hour;
+        const hourData=j.data.rows.filter(r=>r.fcst_hour===firstHour);
+        rebuildWindGrid(hourData);
+        // Enable wind layer by default
+        activeLayers.W=true;
+        document.querySelector('[data-layer="W"]').classList.add('on');
+        updateLayerVisibility();
+      }
+    }catch(e){console.warn('wind grid load:',e);}
+  }, 1000);
 });
 
 /*-------------- debug overlay (use ?debug=1)--------------*/
@@ -622,7 +853,7 @@ if(new URLSearchParams(location.search).has('debug')){
     t+='active='+JSON.stringify(activeLayers)+'\n';
     const sc=s=>{try{const d=map.getSource(s)?._data;return d?(d.features||[]).length:'no-src';}catch(e){return 'ERR';}};
     t+='src temp='+sc('grid-temp')+' prec='+sc('grid-prec')+' cloud='+sc('grid-cloud')+'\n';
-    t+='windCanvas=yes windActive='+activeLayers.W+'\n';
+    t+='windCanvas=yes windActive='+activeLayers.W+' windAnim='+windAnimVisible+'\n';
     try{
       const c=windCanv;
       if(c&&c.width){const d=windCtx.getImageData(0,0,c.width,c.height).data;let nz=0;for(let i=3;i<d.length;i+=4)if(d[i]>20)nz++;t+='windPx='+nz+'\n';}

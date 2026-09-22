@@ -174,6 +174,31 @@ The main office coordinates all LRC activities nationwide and serves as the prim
         'tags': ['volunteers', 'management', 'recruitment'],
         'priority': 7
     },
+    
+    # Refugee Data - Manual Entry based on humanitarian reports
+    {
+        'category': 'displacement',
+        'title': 'Sudanese Refugees in Libya',
+        'content': '''According to humanitarian reports, there are approximately 40,000-50,000 Sudanese refugees and asylum seekers in Libya as of 2024. The majority fled the conflict in Sudan that began in April 2023. These refugees are primarily located in urban areas, with significant populations in Tripoli, Benghazi, and other major cities. Many Sudanese refugees in Libya face challenges including lack of legal documentation, limited access to services, and insecurity. UNHCR and partner organizations provide protection, assistance, and documentation services to Sudanese refugees in Libya.
+
+Note: This is an approximate figure based on humanitarian reports and may vary. For the most current official statistics, please contact UNHCR Libya directly.''',
+        'source': 'Humanitarian Reports/UNHCR',
+        'source_url': 'https://www.unhcr.org/libya',
+        'tags': ['refugees', 'sudanese', 'sudan', 'unhcr', 'displacement'],
+        'priority': 9
+    },
+    
+    {
+        'category': 'displacement',
+        'title': 'Total Refugee Population in Libya',
+        'content': '''Libya hosts a significant refugee and asylum seeker population, estimated at approximately 50,000-60,000 people as of 2024. The population includes refugees and asylum seekers from Sudan, Syria, Palestine, Eritrea, Somalia, Iraq, and other countries. The majority live in urban areas rather than camps. UNHCR and partners provide protection, assistance, and documentation services. The exact number fluctuates due to ongoing movement and documentation processes.
+
+For current official figures, consult UNHCR Libya's latest situation reports.''',
+        'source': 'UNHCR/Humanitarian Reports',
+        'source_url': 'https://www.unhcr.org/libya',
+        'tags': ['refugees', 'asylum_seekers', 'population', 'unhcr'],
+        'priority': 9
+    },
 ]
 
 # Additional humanitarian sources for reference

@@ -1,5 +1,5 @@
 """
-General chatbot using lrc-assistant and kimi-k2.5
+General chatbot using gemma4:31b-cloud and gpt-oss:20b-cloud
 """
 import requests
 from typing import Dict, Optional
@@ -12,8 +12,8 @@ class GeneralChatbot:
     
     def __init__(self, ollama_url: str = "http://localhost:11434"):
         self.ollama_url = ollama_url
-        self.primary_model = "lrc-assistant:latest"
-        self.fallback_model = "kimi-k2.5"
+        self.primary_model = "gemma4:31b-cloud"
+        self.fallback_model = "gpt-oss:20b-cloud"
     
     def respond(self, message: str, use_fallback: bool = False) -> tuple[bool, str]:
         """Get response from chatbot

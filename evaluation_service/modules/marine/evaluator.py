@@ -20,8 +20,8 @@ class MarineEvaluator:
 
     def __init__(self, ollama_url: str = None):
         self.ollama_url = ollama_url or os.environ.get('OLLAMA_URL', 'http://localhost:11434')
-        self.cloud_model = os.environ.get('OLLAMA_MODEL', 'minimax-m3:cloud')
-        self.local_model = os.environ.get('OLLAMA_MODEL', 'minimax-m2.1:cloud')
+        self.cloud_model = os.environ.get('OLLAMA_MODEL', 'gemma4:31b-cloud')
+        self.local_model = os.environ.get('OLLAMA_MODEL', 'gpt-oss:20b-cloud')
         self.models = resolve_models(self.ollama_url, preferred=self.cloud_model,
                                      fallback=self.local_model)
         # Slow cloud/thinking models caused multi-minute stalls; try fast local

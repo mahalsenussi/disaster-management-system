@@ -146,6 +146,48 @@
             background: #2980b9;
         }
         
+        /* Advanced map links */
+        .adv-maps {
+            margin-bottom: 20px;
+        }
+        
+        .adv-maps-label {
+            display: block;
+            font-size: 11px;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+        
+        .adv-map-link {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: linear-gradient(135deg, #16213e, #1a1a2e);
+            border: 1px solid #2a3555;
+            color: #fff;
+            text-decoration: none;
+            padding: 12px 14px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        
+        .adv-map-link:hover {
+            border-color: #e94560;
+            background: #1f2947;
+            transform: translateX(3px);
+        }
+        
+        .adv-map-link .adv-arrow {
+            margin-left: auto;
+            color: #e94560;
+            font-size: 16px;
+        }
+        
         /* Stats cards */
         .stats-section {
             margin-bottom: 20px;
@@ -448,6 +490,9 @@
             background: #e94560;
             border-radius: 2px;
         }
+    .bmtoggle{display:flex;gap:3px}
+.bm-btn{background:rgba(255,255,255,.92);border:1px solid #c9d2e0;color:#334155;padding:4px 9px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.2);line-height:1.2}
+.bm-btn.on{border-color:#0ea5e9;color:#fff;background:#0ea5e9}
     </style>
 </head>
 <body>
@@ -472,6 +517,12 @@
                 <h2>🌤️ Weather Module</h2>
             </div>
             
+            <div class="adv-maps">
+                <span class="adv-maps-label">Advanced Maps</span>
+                <a href="/forecast" target="_blank" class="adv-map-link">🛰 Advanced Forecast Map <span class="adv-arrow">↗</span></a>
+                <a href="/weather-map" target="_blank" class="adv-map-link">🗺 Weather & Coastal Hazard Map <span class="adv-arrow">↗</span></a>
+            </div>
+            
             <div class="tab-header">
                 <h2>AI Danger Assessment</h2>
             </div>
@@ -485,6 +536,12 @@
         <div id="coastal-tab" class="tab-content">
             <div class="tab-header">
                 <h2>🌊 Coastal Module</h2>
+            </div>
+            
+            <div class="adv-maps">
+                <span class="adv-maps-label">Advanced Maps</span>
+                <a href="/weather-map" target="_blank" class="adv-map-link">🗺 Coastal & Marine Hazard Map <span class="adv-arrow">↗</span></a>
+                <a href="/forecast" target="_blank" class="adv-map-link">🛰 Advanced Forecast Map <span class="adv-arrow">↗</span></a>
             </div>
             
             <div class="tab-header">
@@ -668,6 +725,7 @@
                             <li>📋 Medical report interpretation</li>
                             <li>👥 Team & resource coordination</li>
                             <li>📰 News & incident monitoring</li>
+                            <li>📊 HDX humanitarian data (displacement, food security, conflict)</li>
                         </ul>
                         
                         <h3 style="color: #4fc3f7; margin-top: 20px;">System Status</h3>
@@ -683,6 +741,16 @@
                             </button>
                         </div>
                         
+                        <div style="margin-bottom: 10px;">
+                            <button onclick="collectHDXData()" style="background: #e67e22; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; width: 100%;">
+                                🔄 Collect HDX Data
+                            </button>
+                        </div>
+                        <div id="hdxStatus" style="color: #aaa; font-size: 12px; margin-bottom: 10px; padding: 8px; background: #2d2d2d; border-radius: 4px;">
+                            <p style="margin: 3px 0;">HDX Status: <span id="hdxStatusText">Loading...</span></p>
+                            <p style="margin: 3px 0; display: none;" id="hdxStatsLine"></p>
+                        </div>
+                        
                         <div id="knowledgePanel" style="display: none; background: #333; padding: 15px; border-radius: 6px; margin-top: 10px;">
                             <div style="margin-bottom: 10px;">
                                 <label style="color: #fff; font-size: 12px;">Category:</label>
@@ -695,6 +763,19 @@
                                     <option value="partners">Partner Organizations</option>
                                     <option value="training">Training</option>
                                     <option value="volunteers">Volunteers</option>
+                                    <option value="displacement">Displacement (HDX)</option>
+                                    <option value="humanitarian_needs">Humanitarian Needs (HDX)</option>
+                                    <option value="conflict_security">Conflict & Security (HDX)</option>
+                                    <option value="operational_presence">Operational Presence (HDX)</option>
+                                    <option value="funding">Funding (HDX)</option>
+                                    <option value="food_security">Food Security (HDX)</option>
+                                    <option value="population">Population (HDX)</option>
+                                    <option value="climate_data">Climate Data (HDX)</option>
+                                    <option value="health">Health (HDX)</option>
+                                    <option value="education">Education (HDX)</option>
+                                    <option value="infrastructure">Infrastructure (HDX)</option>
+                                    <option value="geodata">Geodata (HDX)</option>
+                                    <option value="hdx_datasets">HDX Dataset Catalog</option>
                                 </select>
                             </div>
                             <div style="margin-bottom: 10px;">
@@ -807,6 +888,30 @@
         let coastalMarkers = {};
         let coastalData = {};
         
+        function addBasemapToggle(target){
+            var BM_OSM='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+            var BM_SAT='https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2020_3857/default/g/{z}/{y}/{x}.jpg';
+            var streetLayer=L.tileLayer(BM_OSM,{maxZoom:19,attribution:'© OpenStreetMap'});
+            var satLayer=L.tileLayer(BM_SAT,{maxZoom:16});
+            streetLayer.addTo(target);
+            var container=document.createElement('div'); container.className='bmtoggle';
+            function apply(mode){
+                container.querySelectorAll('.bm-btn').forEach(function(x){x.classList.toggle('on',x.dataset.basemap===mode);});
+                if(mode==='satellite'){if(target.hasLayer(streetLayer))target.removeLayer(streetLayer);if(!target.hasLayer(satLayer))satLayer.addTo(target);}
+                else {if(target.hasLayer(satLayer))target.removeLayer(satLayer);if(!target.hasLayer(streetLayer))streetLayer.addTo(target);}
+            }
+            ['street','satellite'].forEach(function(m){
+                var b=document.createElement('button');
+                b.className='bm-btn'+(m==='street'?' on':'');
+                b.textContent=m==='street'?'🗺 Map':'🛰 Sat';
+                b.onclick=function(){apply(m);};
+                container.appendChild(b);
+            });
+            var ctrl=L.control({position:'bottomleft'});
+            ctrl.onAdd=function(){L.DomEvent.disableClickPropagation(container);return container;};
+            ctrl.addTo(target);
+        }
+
         // Initialize map
         function initMap() {
             // Check if map is already initialized
@@ -816,9 +921,7 @@
             
             map = L.map('map').setView([27.0, 17.0], 6);
             
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap contributors'
-            }).addTo(map);
+            addBasemapToggle(map);
             
             // Add city markers (weather - shown by default)
             for (const [city, coords] of Object.entries(libyanCities)) {
@@ -2192,12 +2295,70 @@
                     }
                 });
             }
+            loadHDXStatus();
         });
         
         // Knowledge base functions
         function toggleKnowledgePanel() {
             const panel = document.getElementById('knowledgePanel');
             panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+        }
+        
+        async function loadHDXStatus() {
+            try {
+                const response = await fetch('/api/knowledge-base/hdx-status');
+                const data = await response.json();
+                const statusText = document.getElementById('hdxStatusText');
+                const statsLine = document.getElementById('hdxStatsLine');
+                
+                if (data.success) {
+                    const total = data.status.total_entries;
+                    const lastCollected = data.status.last_collection ? 
+                        new Date(data.status.last_collection).toLocaleString() : 'Never';
+                    statusText.textContent = `HDX connected - ${total} entries`;
+                    statusText.style.color = '#2ecc71';
+                    statsLine.style.display = 'block';
+                    statsLine.textContent = `Last collected: ${lastCollected}`;
+                } else {
+                    statusText.textContent = 'HDX: Error';
+                    statusText.style.color = '#e74c3c';
+                }
+            } catch (error) {
+                document.getElementById('hdxStatusText').textContent = 'HDX: Offline';
+                document.getElementById('hdxStatusText').style.color = '#e74c3c';
+            }
+        }
+        
+        async function collectHDXData() {
+            const btn = document.querySelector('#hdxStatus');
+            const statusText = document.getElementById('hdxStatusText');
+            statusText.textContent = 'Collecting HDX data... (may take a few minutes)';
+            statusText.style.color = '#f39c12';
+            
+            try {
+                const response = await fetch('/api/knowledge-base/collect-hdx', {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    const r = data.result;
+                    statusText.textContent = `✓ Collected: ${r.entries_saved} new, ${r.entries_updated} updated`;
+                    statusText.style.color = '#2ecc71';
+                    document.getElementById('hdxStatsLine').style.display = 'block';
+                    document.getElementById('hdxStatsLine').textContent = 
+                        `HDX: ${r.entries_total} entries | Categories: ${r.datasets_discovered} datasets`;
+                    alert(`HDX collection complete!\n\nNew entries: ${r.entries_saved}\nUpdated: ${r.entries_updated}\nErrors: ${r.errors}`);
+                } else {
+                    statusText.textContent = `Error: ${data.error}`;
+                    statusText.style.color = '#e74c3c';
+                    alert(`HDX collection failed: ${data.error}`);
+                }
+            } catch (error) {
+                statusText.textContent = 'Collection failed';
+                statusText.style.color = '#e74c3c';
+                alert(`Error: ${error.message}`);
+            }
         }
         
         async function addKnowledgeEntry() {

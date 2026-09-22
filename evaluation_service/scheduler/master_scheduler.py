@@ -38,6 +38,18 @@ class MasterScheduler:
         self._jobs[job_id] = job
         logger.info(f"Job scheduled: {job_id} - Every {interval_minutes}min at {at_time}", module='SCHEDULER')
     
+    def add_daily_job(self, job_id: str, func: Callable, at_time: str = "06:00"):
+        """Add a daily scheduled job
+        
+        Args:
+            job_id: Unique identifier for the job
+            func: Function to execute
+            at_time: Time to run daily (e.g., "06:00")
+        """
+        job = schedule.every().day.at(at_time).do(func)
+        self._jobs[job_id] = job
+        logger.info(f"Daily job scheduled: {job_id} - Daily at {at_time}", module='SCHEDULER')
+    
     def remove_job(self, job_id: str):
         """Remove a scheduled job"""
         if job_id in self._jobs:

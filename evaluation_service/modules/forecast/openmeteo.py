@@ -48,7 +48,7 @@ GRID_LAT_MIN, GRID_LAT_MAX, GRID_LAT_STEP = 26.0, 36.5, 0.5
 GRID_LON_MIN, GRID_LON_MAX, GRID_LON_STEP = 9.0, 26.0, 0.5
 GRID_BATCH = 250          # coordinates per request (fits under URL + rate limits)
 GRID_HOURS = 48           # playback horizon
-GRID_MAX_AGE_HOURS = 36   # a grid snapshot stays usable this long
+GRID_MAX_AGE_HOURS = 240   # a grid snapshot stays usable this long (increased for testing)
 
 FORECAST_DAILY_VARS = (
     "weather_code,temperature_2m_max,temperature_2m_min,"

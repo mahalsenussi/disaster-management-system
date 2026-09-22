@@ -7,6 +7,7 @@ from flask_cors import CORS
 import os
 import sys
 from datetime import datetime, timedelta, timezone
+from typing import Optional, List
 
 # Add parent directory to path for package imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -643,6 +644,9 @@ def get_forecast_grid():
             success, message, data = forecast_openmeteo.get_grid_all(var)
         else:
             success, message, data = forecast_openmeteo.get_grid_var(var, hour)
+        # Normalize response structure to match frontend expectations
+        if success and isinstance(data, dict):
+            return jsonify({'status': 'success', 'message': message, 'data': data}), 200
         return jsonify({'status': 'success' if success else 'error',
                         'message': message, 'data': data}), (200 if success else 400)
     except Exception as e:
@@ -1143,6 +1147,233 @@ def medical_chatbot():
             'message': str(e)
         }), 500
 
+
+_KB_GENERIC_WORDS = {
+    'libya', 'libyan', 'data', 'dataset', 'datasets', 'information', 'info',
+    'numbers', 'number', 'total', 'details', 'report', 'reports', 'source',
+    'sources', 'statistics', 'overview', 'summary', 'latest', 'current',
+    'confirmed', 'cases', 'case', 'about', 'people', 'person', 'affected',
+    'situation', 'conditions', '2024', '2025', '2026', 'last', 'years', 'year',
+}
+
+
+def _websearch_fallback_response(message: str, retrieval_info: dict,
+                                 chat_repo=None, session_id=None,
+                                 categories: Optional[list] = None):
+    """Live humanitarian web search fallback (HDX + web + Wikipedia + news).
+    Used when the KB has no strong match: answers from citable humanitarian
+    sources instead of dumping irrelevant entries."""
+    try:
+        from evaluation_service.modules.chatbot.websearch import ChatbotWebSearch
+        searcher = ChatbotWebSearch()
+        results = searcher.search(message, categories=categories, max_results=7)
+        if results:
+            body = ("I couldn't find a direct match in the knowledge base, "
+                    "so I checked reliable humanitarian and web sources:\n\n")
+            body += searcher.format_results(results, max_items=5)
+            body += ("\n\nThese are the most relevant sources. I recommend "
+                     "opening the links for the exact figures and latest data.")
+            model_used = "websearch (HDX + web sources)"
+            routing_info = {
+                'route': 'lrc_helper',
+                'reasoning': 'No strong KB match → live web search (HDX/web/news)',
+                'retrieval': retrieval_info
+            }
+            return body, model_used, routing_info
+    except Exception as e:
+        logger.warning(f"Websearch fallback failed: {e}", module='CHATBOT')
+
+    response_text = ("I don't have this information in my knowledge base, and a live search of "
+                     "reliable humanitarian and web sources did not return a good match. "
+                     "Please try a more specific question about displacement, "
+                     "food security and prices, conflict events, humanitarian funding, "
+                     "health, education, or infrastructure in Libya.")
+    model_used = "no reliable match (KB + web search)"
+    routing_info = {
+        'route': 'lrc_helper',
+        'reasoning': 'LLM unavailable, no KB match, no web match'
+    }
+    return response_text, model_used, routing_info
+
+def _kb_fallback_response(message: str, kb_repo, retrieval_info: dict,
+                          chat_repo=None, session_id=None, recent_user_msgs=None):
+    """KB-aware fallback when LLM is unavailable.
+    Searches the knowledge base directly and returns matching entries ONLY if
+    there is strong evidence (topic category + title keyword evidence).
+    Otherwise falls back to a live humanitarian web search (HDX) instead of
+    dumping loosely-matched entries.
+    """
+    import re
+
+    # Use conversation context: if current message is a short follow-up,
+    # merge prior user messages so the topic (e.g. food prices) stays in scope.
+    context_msgs = []
+    if recent_user_msgs:
+        context_msgs = list(recent_user_msgs)
+    elif chat_repo is not None and session_id:
+        try:
+            prior = chat_repo.get_session_messages(session_id, limit=20)
+            context_msgs = [m['content'] for m in prior[::-1]
+                            if m['message_type'] == 'user' and m['content'] != message][:3][::-1]
+        except Exception:
+            context_msgs = []
+
+    stopwords = {'the', 'and', 'for', 'are', 'but', 'not', 'you', 'all', 'can', 'had',
+                 'was', 'one', 'our', 'has', 'how', 'tell', 'what', 'about', 'does',
+                 'there', 'this', 'that', 'with', 'from', 'have', 'some', 'do', 'me',
+                 'would', 'could', 'should', 'will', 'any', 'just', 'your', 'its',
+                 'been', 'they', 'them', 'their', 'these', 'those', 'were', 'said',
+                 'whats', 'lets', 'let', 'check', 'see', 'look', 'want',
+                 'available', 'avilable', 'we', 'ok', 'okay', 'yeah', 'yes', 'thee'}
+
+    # City/region lexicon for location-aware ranking
+    locations = ['tripoli', 'benghazi', 'misrata', 'misurata', 'derna', 'ejdabia',
+                 'al bayda', 'albaida', 'albayda', 'sabha', 'sebha', 'zawiya', 'zawia',
+                 'zuwara', 'zwara', 'sirte', 'surt', 'gharyan', 'gharian', 'mizda',
+                 'murzuq', 'ubari', 'kufra', 'elfeel', 'sabratha', 'al zintan', 'tarhuna',
+                 'bani walid', 'gergaresh', 'janzour', 'janzur', 'abu salim', 'abusliem',
+                 'souq aljumaa', 'suq aljumaa', 'east', 'west', 'south', 'north',
+                 'darnah', 'gadames', 'ghat', 'nofilia', 'ras lanuf', 'brega', 'ajdabiya',
+                 'misurata', 'az zintan', 'djebel', 'aljabal', 'jabal', 'alzawiya']
+
+    found_locs = [loc for loc in locations if loc in message.lower()]
+
+    # Topic keywords → categories
+    topic_keywords = {
+        'food_security': ['food', 'price', 'prices', 'market', 'wheat', 'nutrition', 'hunger', 'commodity'],
+        'displacement': ['idp', 'displaced', 'refugee', 'refugees', 'migration', 'displacement', 'unhcr'],
+        'conflict_security': ['conflict', 'fatali', 'violence', 'attack', 'bomb', 'security', 'war', 'militia', 'military'],
+        'funding': ['funding', 'appeal', 'budget', 'cerf', 'aid', 'aids'],
+        'population': ['population', 'how many people', 'demographic'],
+        'operational_presence': ['organization', 'ngo', 'agency', 'who is doing'],
+        'climate_data': ['rain', 'climate', 'drought', 'flood', 'storm'],
+        'health': ['health', 'hospital', 'medical', 'clinic', 'tb', 'covid', 'disease', 'diseases', 'infection', 'doctor'],
+        'education': ['education', 'school', 'student', 'university'],
+        'infrastructure': ['road', 'transport', 'port', 'bridge', 'airport', 'power', 'electric', 'dams'],
+        'humanitarian_needs': ['need', 'humanitarian', 'assessment'],
+        'lrc_organization': ['lrc', 'red crescent', 'mission'],
+        'contact_information': ['contact', 'phone', 'address', 'hotline'],
+    }
+
+    analysis_text_full = message
+    if context_msgs:
+        analysis_text_full = " ".join(context_msgs) + " " + message
+
+    # Detect relevant categories from the merged text
+    msg_lower = analysis_text_full.lower()
+    relevant_cats = []
+    for cat, kws in topic_keywords.items():
+        if any(k in msg_lower for k in kws):
+            relevant_cats.append(cat)
+
+    # Strong signal keywords: non-generic words from the current message
+    strong_kws = set()
+    for w in re.findall(r"[a-zA-Z]{3,}", message.lower()):
+        if w not in stopwords and w not in [l.replace(' ', '') for l in locations] \
+                and w not in _KB_GENERIC_WORDS:
+            strong_kws.add(w)
+    if not strong_kws:
+        strong_kws = set(message.lower().split())
+
+    def _kw_hits(kw, title_l, content_l):
+        """Stem-aware keyword match: exact, prefix, or contained word."""
+        if kw in title_l or kw in content_l:
+            return True
+        for word in title_l.split() + content_l.split()[:400]:
+            word = word.strip('.,;:()[]{}\"\'!?')
+            if len(word) >= 3:
+                if kw in word or word.startswith(kw) or kw.startswith(word):
+                    return True
+        return False
+
+    final_entries = []
+
+    # STRICT selection: require topic category AND evidence in the title,
+    # otherwise the entry is too generic to claim as a relevant source.
+    if relevant_cats:
+        cat_entries = []
+        for cat in relevant_cats:
+            cat_entries.extend(kb_repo.get_entries_by_category(cat))
+
+        scored_cat = []
+        for e in cat_entries:
+            score = 0
+            title_l = (e.get('title') or '').lower()
+            content_l = (e.get('content') or '').lower()
+            title_evidence = any(_kw_hits(kw, title_l, '') for kw in strong_kws)
+            title_loc = any(loc in title_l for loc in found_locs)
+            if not title_evidence and not title_loc:
+                continue
+            score += 4 if title_evidence else 1
+            for loc in found_locs:
+                if loc in title_l:
+                    score += 6
+                elif loc in content_l:
+                    score += 3
+            for kw in strong_kws:
+                if _kw_hits(kw, title_l, content_l):
+                    score += 2
+            scored_cat.append((score, e))
+
+        scored_cat.sort(key=lambda x: -x[0])
+        for score, e in scored_cat[:5]:
+            final_entries.append(e)
+
+    # If only a location provided (no topic matched), require title location hit
+    if not final_entries and found_locs and not strong_kws:
+        for loc in found_locs:
+            for e in kb_repo.search_entries(loc, limit=5):
+                if e.get('category') != 'hdx_datasets' or e.get('title', '').lower().count(loc) > 1:
+                    final_entries.append(e)
+        final_entries = list({e['id']: e for e in final_entries}.values())[:5]
+
+    if final_entries:
+        parts = []
+        n = len(final_entries)
+        
+        # Extract actual data first, then provide sources
+        for e in final_entries[:3]:
+            content = e.get('content', '')
+            if content and len(content) > 50:
+                # Check if content has actual numbers/data
+                import re
+                if re.search(r'\d+[,\d]*', content):
+                    parts.append(content)
+                    break
+        
+        # If no data found, use the entry with highest priority
+        if not parts:
+            for e in final_entries[:3]:
+                content = e.get('content', '')
+                if content and len(content) > 50:
+                    parts.append(content)
+                    break
+        
+        # Then provide sources as references
+        parts.append(f"\n\nSource information:")
+        for e in final_entries[:5]:
+            source = e.get('source', 'N/A')
+            title = e.get('title', 'N/A')
+            parts.append(f"- {title} ({source})")
+        
+        response_text = "\n".join(parts)
+        model_used = "knowledge_base (no LLM)"
+        routing_info = {
+            'route': 'lrc_helper',
+            'reasoning': 'KB direct lookup (LLM unavailable)',
+            'retrieval': retrieval_info
+        }
+    else:
+        # No strong KB evidence: search reliable humanitarian + web sources
+        web_response, web_model, web_routing = _websearch_fallback_response(
+            message, retrieval_info, chat_repo=chat_repo, session_id=session_id,
+            categories=relevant_cats
+        )
+        return web_response, web_model, web_routing
+
+    return response_text, model_used, routing_info
+
+
 @app.route('/api/chatbot/status', methods=['GET'])
 def chatbot_status():
     """Get chatbot system status"""
@@ -1262,6 +1493,80 @@ def get_knowledge_categories():
             'error': str(e)
         }), 500
 
+@app.route('/api/knowledge-base/collect-hdx', methods=['POST'])
+def collect_hdx_data():
+    """Trigger HDX data collection from HAPI and CKAN"""
+    try:
+        from evaluation_service.repositories.knowledge_base import KnowledgeBaseRepository
+        from evaluation_service.modules.hdx.collector import HDXCollector
+
+        kb_repo = KnowledgeBaseRepository()
+        collector = HDXCollector()
+
+        result = collector.collect_and_save(kb_repo)
+
+        return jsonify({
+            'success': True,
+            'result': result
+        }), 200
+
+    except Exception as e:
+        logger.error(f"HDX collection error: {e}", module='API', exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/knowledge-base/hdx-status', methods=['GET'])
+def hdx_status():
+    """Get HDX data collection status and knowledge base statistics"""
+    try:
+        from evaluation_service.repositories.knowledge_base import KnowledgeBaseRepository
+        from evaluation_service.modules.hdx.collector import HDXCollector
+
+        kb_repo = KnowledgeBaseRepository()
+        collector = HDXCollector()
+
+        status = collector.get_status(kb_repo)
+
+        return jsonify({
+            'success': True,
+            'status': status
+        }), 200
+
+    except Exception as e:
+        logger.error(f"HDX status error: {e}", module='API', exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/knowledge-base/stats', methods=['GET'])
+def knowledge_base_stats():
+    """Get overall knowledge base statistics"""
+    try:
+        from evaluation_service.repositories.knowledge_base import KnowledgeBaseRepository
+
+        kb_repo = KnowledgeBaseRepository()
+        categories = kb_repo.get_entries_count_by_category()
+        total = sum(s.get('count', 0) for s in categories.values())
+
+        all_categories = kb_repo.get_all_categories()
+
+        return jsonify({
+            'success': True,
+            'total_entries': total,
+            'categories': categories,
+            'all_categories': all_categories
+        }), 200
+
+    except Exception as e:
+        logger.error(f"KB stats error: {e}", module='API', exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
 @app.route('/api/chatbot/message', methods=['POST'])
 def chatbot_message():
     """Enhanced chatbot endpoint with file upload and routing"""
@@ -1311,7 +1616,7 @@ def chatbot_message():
                 ollama_response = requests.post(
                     'http://localhost:11434/api/generate',
                     json={
-                        "model": "minimax-m3:cloud",  # Using cloud model for faster response
+                        "model": "gemma4:31b-cloud",  # Free cloud model
                         "prompt": prompt,
                         "images": [image_data],
                         "stream": False,
@@ -1346,7 +1651,7 @@ RESPONSE STYLE:
                 if ollama_response.status_code == 200:
                     result = ollama_response.json()
                     response_text = result.get('response', 'Analysis completed but no response generated.')
-                    model_used = "minimax-m3:cloud"
+                    model_used = "gemma4:31b-cloud"
                     routing_info = {'route': 'medical_ai', 'reasoning': 'File upload detected - medical image analysis'}
                 else:
                     response_text = f"Error calling medical AI: {ollama_response.status_code}"
@@ -1371,7 +1676,7 @@ RESPONSE STYLE:
                 ollama_response = requests.post(
                     'http://localhost:11434/api/generate',
                     json={
-                        "model": "minimax-m3:cloud",  # Using cloud model for faster response
+                        "model": "gemma4:31b-cloud",  # Free cloud model
                         "prompt": message,
                         "stream": False,
                         "system": """You are a Medical AI Assistant for the Libyan Red Crescent (LRC). Provide professional medical guidance for emergency situations.
@@ -1395,7 +1700,7 @@ GUIDELINES:
                 if ollama_response.status_code == 200:
                     result = ollama_response.json()
                     response_text = result.get('response', 'No response generated.')
-                    model_used = "minimax-m3:cloud"
+                    model_used = "gemma4:31b-cloud"
                     routing_info = {'route': 'medical_ai', 'reasoning': 'Manual mode selection'}
                 else:
                     response_text = f"Error calling medical AI: {ollama_response.status_code}"
@@ -1411,77 +1716,209 @@ GUIDELINES:
             # Default to LRC helper with knowledge base
             try:
                 from evaluation_service.repositories.knowledge_base import KnowledgeBaseRepository
-                
-                # Get knowledge context
+
+                # Topic-aware knowledge retrieval
                 kb_repo = KnowledgeBaseRepository()
-                knowledge_context = kb_repo.get_knowledge_context(max_entries=30)
-                
+
+                # Pull recent user messages for conversation context (follow-ups
+                # like "let check ejdabia" depend on the prior topic)
+                recent_user_msgs = []
+                if session_id:
+                    try:
+                        import re as _re
+                        prior_msgs = chat_repo.get_session_messages(session_id, limit=20)
+                        # include current message implicitly; collect previous user turns
+                        prev = [m['content'] for m in prior_msgs
+                                if m['message_type'] == 'user' and m['content'] != message]
+                        recent_user_msgs = prev[-4:]
+                    except Exception:
+                        pass
+
+                # Map user query keywords to KB categories
+                def detect_categories(message_text: str):
+                    msg = message_text.lower()
+                    # Merge recent user turns so short follow-ups inherit the topic
+                    full_msg = msg
+                    if recent_user_msgs:
+                        full_msg = (" ".join(recent_user_msgs) + " " + msg)
+                    topic_map = {
+                        'displacement': ['displacement', 'idp', 'displaced', 'refugee', 'refugees', 'migration', 'displaced person', 'sudanese', 'asylum', 'unhcr'],
+                        'humanitarian_needs': ['need', 'humanitarian need', 'population in need', 'assessment', 'un aid', 'un arms'],
+                        'conflict_security': ['conflict', 'violence', 'attack', 'fatalit', 'bomb', 'terror', 'war', 'clash', 'militia', 'civilian targeting', 'military'],
+                        'operational_presence': ['organization', 'ngo', 'who is doing', 'operational presence', 'agency', 'red cross'],
+                        'funding': ['funding', 'appeal', 'money', 'budget', 'financial', 'cerf', 'aid', 'assistance', 'donation', 'grants'],
+                        'food_security': ['food', 'hunger', 'nutrition', 'famine', 'price', 'prices', 'market', 'wheat', 'commodity', 'foodstuff', 'food stuff'],
+                        'population': ['population', 'demographic', 'people in libya', 'how many people'],
+                        'climate_data': ['rain', 'climate', 'drought', 'flood', 'weather', 'precipitation', 'storm'],
+                        'health': ['health', 'hospital', 'medical', 'disease', 'clinic', 'doctor', 'medicine'],
+                        'education': ['education', 'school', 'university', 'student'],
+                        'infrastructure': ['road', 'transport', 'port', 'bridge', 'infrastructure', 'airport', 'power', 'electricity'],
+                        'geodata': ['boundary', 'administrative', 'map', 'border', 'coordinate'],
+                        'contact_information': ['contact', 'phone', 'address', 'hotline', 'reach', 'office'],
+                        'first_aid': ['first aid', 'cpr', 'medical assistance', 'emergency help'],
+                        'disaster_management': ['disaster', 'emergency', 'risk', 'hazard', 'preparedness', 'dams'],
+                        'partners': ['partner', 'ifrc', 'icrc', 'united nations', 'unhcr', 'unicef', 'wfp', 'who', 'iom', 'eu', 'red cross'],
+                        'lrc_organization': ['lrc', 'red crescent', 'organization', 'libyan red', 'mission'],
+                    }
+
+                    selected = []
+                    for cat, keywords in topic_map.items():
+                        if any(kw in full_msg for kw in keywords):
+                            selected.append(cat)
+
+                    # Always include core LRC context
+                    core = ['lrc_organization', 'emergency_response', 'humanitarian_principles', 'contact_information']
+                    # Query-relevant categories FIRST so the small model attends to answer data
+                    return list(dict.fromkeys(selected + core))
+
+                categories = detect_categories(message)
+
+                # Get knowledge context: relevant categories + top priority entries
+                knowledge_context = kb_repo.get_knowledge_context(
+                    categories=categories,
+                    max_entries=30
+                )
+                if len(knowledge_context.strip()) < 200:
+                    # Fallback to top priority entries if category match was empty
+                    knowledge_context = kb_repo.get_knowledge_context(max_entries=30)
+
+                retrieval_info = {
+                    'categories_used': categories,
+                    'context_len': len(knowledge_context)
+                }
+
                 # Build prompt with knowledge base
+                _conv_block = ""
+                if recent_user_msgs:
+                    _conv_block = "\nCONVERSATION CONTEXT (previous user questions in this session):\n" + \
+                        "\n".join(f"- {u}" for u in recent_user_msgs) + \
+                        "\nThe user's current question above may be a follow-up on these. Use them to understand context, but answer the current question."
                 system_prompt = f"""You are the LRC (Libyan Red Crescent) Emergency Intelligence Assistant. You provide humanitarian information, operational guidance, and support for emergency response.
 
 KNOWLEDGE BASE:
 {knowledge_context}
-
+{_conv_block}
 RESPONSE GUIDELINES:
+- ANSWER WITH ACTUAL NUMBERS AND DATA FIRST, then provide sources
+- Extract specific numbers, statistics, and figures from the knowledge base entries
+- Present the real answer clearly at the beginning of your response
+- If the user asks for numbers (like "how many refugees"), provide the exact figure from the data
+- Use the knowledge base entries as your source of truth - the content contains the actual data
 - Answer ONLY using information from the knowledge base (LRC, IFRC, ICRC, UN sources)
 - If information is not available in the knowledge base, state that clearly
 - Prioritize humanitarian principles and safety
 - Provide operational information when relevant
 - Include contact information and addresses when available
 - Be professional, accurate, and helpful
-- For weather, danger, or technical data, acknowledge but focus on humanitarian aspects
+- When data is from HDX, cite the organization (IOM, WFP, OCHA, ACLED, etc.) and mention the data is from HDX
+- Include specific numbers and statistics from the knowledge base when answering data questions
 
 RESPONSE FORMAT:
-- Direct and actionable
-- Cite sources when possible (e.g., "According to LRC...")
+- Start with the direct answer containing actual numbers/data
+- Cite sources when possible (e.g., "According to LRC..." or "According to HDX data...")
 - Include relevant contact information or addresses
 - If unsure, recommend contacting LRC directly
 
 You support LRC volunteers, staff, and the public with humanitarian information and operational guidance."""
 
-                ollama_response = requests.post(
-                    'http://localhost:11434/api/generate',
-                    json={
-                        "model": "minimax-m3:cloud",
-                        "prompt": message,
-                        "stream": False,
-                        "system": system_prompt
-                    },
-                    timeout=60
-                )
-                
-                if ollama_response.status_code == 200:
-                    result = ollama_response.json()
-                    response_text = result.get('response', 'No response generated.')
-                    model_used = "minimax-m3:cloud"
-                    routing_info = {'route': 'lrc_helper', 'reasoning': 'Knowledge-based LRC assistance'}
-                else:
-                    # Fallback to simple responses
-                    message_lower = message.lower()
-                    if 'weather' in message_lower:
-                        response_text = "I can help you with weather information. Our system provides real-time weather data for Libyan cities including Tripoli, Benghazi, and Misrata. Would you like me to check current conditions for a specific location?"
-                    elif 'danger' in message_lower or 'risk' in message_lower:
-                        response_text = "I can provide danger assessment based on multiple data sources including weather patterns, news analysis, and historical incident data. Our AI system evaluates risks and provides recommendations for emergency response teams."
-                    elif 'help' in message_lower:
-                        response_text = "I'm the LRC Emergency Intelligence System Assistant. I can help with:\n\n• Weather monitoring and analysis\n• Marine and coastal safety data\n• Danger assessment and risk evaluation\n• Team and resource coordination\n• Emergency response planning\n• Medical image analysis (upload X-rays, CT scans)\n\nHow can I assist you today?"
-                    else:
-                        response_text = f"I'm here to help with the LRC Emergency Intelligence System. I can provide information about weather conditions, marine safety, danger assessments, and coordinate emergency response efforts. For medical image analysis, please upload the image."
-                    model_used = "lrc_helper (fallback)"
-                    routing_info = {'route': 'lrc_helper', 'reasoning': 'API error - fallback response'}
+                # Resolve models: prefer working cloud models → local models
+                available_models = get_available_models(OLLAMA_URL)
+                preferred = [m for m in [
+                    os.environ.get('OLLAMA_MODEL', ''),
+                    'gemma4:31b-cloud',
+                    'gpt-oss:20b-cloud',
+                    'nemotron-3-super:cloud',
+                    'lfm2.5-thinking:latest',
+                    'lrc-assistant:latest',
+                    'kimi-k2.6:cloud',
+                    'minimax-m3:cloud',
+                ] if m]
+                model_order = []
+                for m in preferred:
+                    if m not in model_order:
+                        model_order.append(m)
+                for m in available_models:
+                    if m not in model_order:
+                        model_order.append(m)
+                # Only try models that actually exist on the server
+                model_order = [m for m in model_order if m in available_models]
+                # Cap attempts so users aren't stuck minutes while big models fail
+                model_order = model_order[:3]
+
+                # Try each model until one succeeds
+                response_text = ""
+                model_used = ""
+                for model in model_order:
+                    try:
+                        ollama_response = requests.post(
+                            f'{OLLAMA_URL}/api/generate',
+                            json={
+                                "model": model,
+                                "prompt": message,
+                                "stream": False,
+                                "system": system_prompt
+                            },
+                            timeout=45
+                        )
+                        if ollama_response.status_code == 200:
+                            result = ollama_response.json()
+                            response_text = result.get('response', 'No response generated.')
+                            model_used = model
+                            routing_info = {
+                                'route': 'lrc_helper',
+                                'reasoning': 'Knowledge-based LRC assistance',
+                                'retrieval': retrieval_info
+                            }
+                            break
+                    except Exception as e:
+                        logger.warning(f"Model {model} failed: {e}", module='CHATBOT')
+
+                # Verify: small models sometimes claim "no data" even when the KB has it.
+                # If the LLM says data unavailable but KB has matching entries, override with direct KB data.
+                if response_text and response_text.strip():
+                    _no_data_phrases = [
+                        'does not contain', 'do not contain', 'not contain',
+                        'not available', 'not directly available', 'not explicitly stated',
+                        'no data', 'no information', 'not present',
+                        'no specific data', 'no specific information', 'no specific figure',
+                        'does not include', 'does not have', 'do not have',
+                        'could not find', 'cannot find', 'no definitive',
+                    ]
+                    lower_resp = response_text.lower()
+                    if any(p in lower_resp for p in _no_data_phrases):
+                        fb_text, fb_model, fb_routing = _kb_fallback_response(
+                            message, kb_repo, retrieval_info,
+                            chat_repo=chat_repo, session_id=session_id
+                        )
+                        if len(fb_text) > 100:
+                            response_text = fb_text
+                            model_used += f' + {fb_model}'
+                            routing_info = fb_routing
+                            routing_info['reasoning'] += ' | LLM claimed no data → KB/web data'
+
+                if not response_text:
+                    # KB-aware fallback: search knowledge base directly for answers
+                    response_text, model_used, routing_info = _kb_fallback_response(
+                        message, kb_repo, retrieval_info,
+                        chat_repo=chat_repo, session_id=session_id
+                    )
             
             except Exception as e:
-                # Fallback to simple responses
-                message_lower = message.lower()
-                if 'weather' in message_lower:
-                    response_text = "I can help you with weather information. Our system provides real-time weather data for Libyan cities including Tripoli, Benghazi, and Misrata. Would you like me to check current conditions for a specific location?"
-                elif 'danger' in message_lower or 'risk' in message_lower:
-                    response_text = "I can provide danger assessment based on multiple data sources including weather patterns, news analysis, and historical incident data. Our AI system evaluates risks and provides recommendations for emergency response teams."
-                elif 'help' in message_lower:
-                    response_text = "I'm the LRC Emergency Intelligence System Assistant. I can help with:\n\n• Weather monitoring and analysis\n• Marine and coastal safety data\n• Danger assessment and risk evaluation\n• Team and resource coordination\n• Emergency response planning\n• Medical image analysis (upload X-rays, CT scans)\n\nHow can I assist you today?"
-                else:
-                    response_text = f"I'm here to help with the LRC Emergency Intelligence System. I can provide information about weather conditions, marine safety, danger assessments, and coordinate emergency response efforts. For medical image analysis, please upload the image."
-                model_used = "lrc_helper (fallback)"
-                routing_info = {'route': 'lrc_helper', 'reasoning': f'Error: {str(e)}'}
+                # KB-aware fallback on any error
+                try:
+                    from evaluation_service.repositories.knowledge_base import KnowledgeBaseRepository
+                    kb_repo_fb = KnowledgeBaseRepository()
+                    response_text, model_used, routing_info = _kb_fallback_response(
+                        message, kb_repo_fb, {'categories_used': [], 'context_len': 0},
+                        chat_repo=chat_repo, session_id=session_id
+                    )
+                except Exception:
+                    response_text = (
+                        "I can help with humanitarian information about Libya. "
+                        "The AI model is temporarily unavailable — please try again in a moment."
+                    )
+                    model_used = "unavailable"
+                    routing_info = {'route': 'lrc_helper', 'reasoning': f'Error: {str(e)}'}
         
         # Store assistant response
         if session_id:
@@ -1616,6 +2053,20 @@ def start_scheduler():
         scheduler.add_job('forecast_grid',
                           forecast_openmeteo.collect_grid,
                           interval_minutes=60)
+
+        # HDX: daily humanitarian data collection from HDX at 6 AM
+        def collect_hdx_daily():
+            try:
+                from evaluation_service.repositories.knowledge_base import KnowledgeBaseRepository
+                from evaluation_service.modules.hdx.collector import HDXCollector
+                kb_repo = KnowledgeBaseRepository()
+                collector = HDXCollector()
+                collector.collect_and_save(kb_repo)
+                logger.info("Daily HDX collection completed", module='SCHEDULER')
+            except Exception as e:
+                logger.error(f"Daily HDX collection failed: {e}", module='SCHEDULER')
+
+        scheduler.add_daily_job('hdx_daily', collect_hdx_daily, at_time="06:00")
 
         scheduler.start()
         logger.info(f"Scheduler started with {len(scheduler.get_jobs())} jobs", module='MAIN')

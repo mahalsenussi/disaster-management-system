@@ -51,8 +51,8 @@ class AnalysisSummarizer:
         self.cloud = OllamaCloudClient()
         # Local/configured fallbacks (slow CPU or paid cloud via local daemon)
         self.model_priority = [
-            "minimax-m3:cloud",
-            "minimax-m2.1:cloud",
+            "gemma4:31b-cloud",
+            "gpt-oss:20b-cloud",
             "command-r7b-arabic:7b",
             "lrc-assistant:latest",
         ]
