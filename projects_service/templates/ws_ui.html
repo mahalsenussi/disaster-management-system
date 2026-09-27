@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Project Control — Training Build</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh;padding:24px}
+  .wrap{max-width:1080px;margin:0 auto}
+  .top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:4px}
+  h1{font-size:1.3rem;font-weight:600}
+  .badge{padding:3px 9px;border-radius:6px;background:#f59e0b;color:#1a1a2e;font-size:10px;font-weight:700;letter-spacing:.06em}
+  .sub{color:#94a3b8;font-size:.82rem;margin-bottom:16px}
+  .tabs{display:flex;gap:6px;border-bottom:1px solid #334155;margin-bottom:18px;flex-wrap:wrap}
+  .tab{padding:8px 14px;border:1px solid #334155;border-bottom:none;border-radius:8px 8px 0 0;background:#1e293b;color:#94a3b8;cursor:pointer;font-size:.85rem}
+  .tab.active{background:#0f172a;color:#7dd3fc;border-color:#38bdf8}
+  .pane{display:none}
+  .pane.active{display:block}
+  .card{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:16px;margin-bottom:12px}
+  .k{font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:#7dd3fc;margin-bottom:6px}
+  .v{font-size:1.15rem;font-weight:600}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}
+  form{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-top:10px}
+  input,select,textarea{background:#0f172a;border:1px solid #334155;color:#e2e8f0;border-radius:7px;padding:8px;font-size:.82rem;width:100%}
+  button{background:#38bdf8;color:#06263a;border:0;border-radius:7px;padding:9px 14px;font-weight:700;font-size:.82rem;cursor:pointer;grid-column:1/-1;justify-self:start}
+  table{width:100%;border-collapse:collapse;font-size:.83rem}
+  th,td{text-align:left;padding:9px 8px;border-bottom:1px solid #1e293b}
+  th{color:#7dd3fc;font-size:.7rem;text-transform:uppercase;letter-spacing:.06em}
+  .muted{color:#94a3b8;font-size:.78rem}
+  .empty{color:#64748b;font-size:.86rem;padding:10px 0}
+  a{color:#7dd3fc}
+  .rowlink{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .tag{font-size:.68rem;padding:2px 7px;border-radius:5px;background:#0f172a;border:1px solid #334155;color:#94a3b8}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <h1 id="wsName">Project #{{ ws_id }}</h1>
+    <span class="badge">🧪 TRAINING BUILD</span>
+    <a class="muted" href="/projects">← all projects</a>
+    <a class="muted" href="/dashboard">ops dashboard</a>
+  </div>
+  <div class="sub">project control — scenario runs, rally points, results and links. Emergency incident feed stays on the operations dashboard.</div>
+
+  <div class="tabs">
+    <button class="tab active" data-pane="overview">Overview</button>
+    <button class="tab" data-pane="rally">Rally Points</button>
+    <button class="tab" data-pane="results">Results</button>
+    <button class="tab" data-pane="links">Links &amp; Forms</button>
+  </div>
+
+  <!-- OVERVIEW -->
+  <div class="pane active" id="pane-overview">
+    <div class="grid" id="ovGrid"></div>
+    <div class="card" style="margin-top:12px">
+      <div class="k">latest workstream event</div>
+      <div class="v" id="ovEvent">—</div>
+      <div class="muted" id="ovEventMeta"></div>
+    </div>
+  </div>
+
+  <!-- RALLY POINTS -->
+  <div class="pane" id="pane-rally">
+    <div class="card">
+      <div class="k">rally points (staging / checkpoints — not incident points)</div>
+      <div id="rallyList"></div>
+    </div>
+    <div class="card">
+      <div class="k">add rally point</div>
+      <form id="rallyForm">
+        <input name="name" placeholder="Name (e.g. Rally Gate North)" required>
+        <input name="category" placeholder="Category (checkpoint/staging)">
+        <input name="lat" placeholder="Latitude" type="number" step="any">
+        <input name="lng" placeholder="Longitude" type="number" step="any">
+        <input name="radius_m" placeholder="Radius (m)" type="number" value="50">
+        <input name="description" placeholder="Description">
+        <button type="submit">Add rally point</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="pane" id="pane-results">
+    <div class="grid" id="resGrid"></div>
+    <div class="card" style="margin-top:12px">
+      <div class="k">incidents by type</div>
+      <div id="resTypes"></div>
+    </div>
+  </div>
+
+  <!-- LINKS -->
+  <div class="pane" id="pane-links">
+    <div class="card">
+      <div class="k">links &amp; forms</div>
+      <div class="muted" style="margin-bottom:8px">A link may point to a form that does not exist yet — it stays listed as a placeholder.</div>
+      <div id="linkList"></div>
+    </div>
+    <div class="card">
+      <div class="k">add link</div>
+      <form id="linkForm">
+        <input name="title" placeholder="Title (e.g. Daily sitrep form)" required>
+        <input name="url" placeholder="URL or path">
+        <select name="kind">
+          <option value="form">form</option>
+          <option value="map">map</option>
+          <option value="doc">document</option>
+          <option value="tool">tool</option>
+        </select>
+        <input name="description" placeholder="Description / status">
+        <button type="submit">Add link</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+const WS = {{ ws_id }};
+const api = (p) => `/api/ws/${WS}${p}`;
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
+  document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+  document.querySelectorAll('.pane').forEach(x => x.classList.remove('active'));
+  t.classList.add('active');
+  document.getElementById('pane-' + t.dataset.pane).classList.add('active');
+});
+
+async function j(p, opt) {
+  const r = await fetch(api(p), opt);
+  return r.json();
+}
+
+async function loadOverview() {
+  const d = await j('/digest');
+  if (d.error) return;
+  document.getElementById('wsName').textContent = d.workstream.name || ('Project #' + WS);
+  const c = d.counts;
+  document.getElementById('ovGrid').innerHTML = [
+    ['scenario runs', c.scenario_runs], ['rally points', c.rally_points],
+    ['teams', c.teams], ['incidents', c.incidents], ['events', c.workstream_events]
+  ].map(([k, v]) => `<div class="card"><div class="k">${k}</div><div class="v">${v ?? '—'}</div></div>`).join('');
+  const ev = d.latest_event;
+  document.getElementById('ovEvent').textContent = ev ? ev.type : '—';
+  document.getElementById('ovEventMeta').textContent = ev ? ('#' + ev.id + ' · ' + (ev.created_at || '')) : '';
+}
+
+async function loadRally() {
+  const d = await j('/rally-points');
+  const rows = d.rally_points || [];
+  document.getElementById('rallyList').innerHTML = rows.length ? `<table>
+    <tr><th>Name</th><th>Category</th><th>Lat</th><th>Lng</th><th>Radius</th><th>Active</th></tr>
+    ${rows.map(r => `<tr><td>${esc(r.name)}</td><td>${esc(r.category)}</td>
+      <td>${r.lat ?? '—'}</td><td>${r.lng ?? '—'}</td><td>${r.radius_m ?? '—'}</td>
+      <td>${r.active ? 'yes' : 'no'}</td></tr>`).join('')}</table>`
+    : '<div class="empty">No rally points yet — add the first one below.</div>';
+}
+
+async function loadResults() {
+  const d = await j('/results');
+  if (d.error) return;
+  const rows = [
+    ['incidents', d.incidents.total], ['critical', d.incidents.critical],
+    ['resolved', d.incidents.resolved], ['runs completed', `${d.scenario_runs.completed}/${d.scenario_runs.total}`],
+    ['active rally points', d.rally_points_active], ['teams assigned', d.teams_assigned],
+    ['events', d.events]
+  ];
+  document.getElementById('resGrid').innerHTML = rows.map(([k, v]) =>
+    `<div class="card"><div class="k">${k}</div><div class="v">${v ?? '—'}</div></div>`).join('');
+  const t = d.incidents_by_type || [];
+  document.getElementById('resTypes').innerHTML = t.length
+    ? t.map(x => `<div class="rowlink" style="padding:6px 0"><span>${esc(x.type)}</span><span class="tag">${x.count}</span></div>`).join('')
+    : '<div class="empty">No incidents recorded for this project yet.</div>';
+}
+
+async function loadLinks() {
+  const d = await j('/links');
+  const rows = d.links || [];
+  document.getElementById('linkList').innerHTML = rows.length ? rows.map(l =>
+    `<div class="rowlink" style="padding:8px 0;border-bottom:1px solid #0f172a">
+      <span>${l.url ? `<a href="${esc(l.url)}">${esc(l.title)}</a>` : esc(l.title)}</span>
+      <span class="tag">${esc(l.kind)}</span></div>` +
+    (l.description ? `<div class="muted" style="padding-bottom:6px">${esc(l.description)}</div>` : '')).join('')
+    : '<div class="empty">No links yet — add one (it may point to a form that does not exist yet).</div>';
+}
+
+document.getElementById('rallyForm').onsubmit = async (e) => {
+  e.preventDefault();
+  const f = new FormData(e.target);
+  const body = {name: f.get('name'), category: f.get('category') || 'rally',
+                lat: parseFloat(f.get('lat')), lng: parseFloat(f.get('lng')),
+                radius_m: parseInt(f.get('radius_m') || '50', 10), description: f.get('description')};
+  await j('/rally-points', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
+  e.target.reset();
+  loadRally();
+};
+
+document.getElementById('linkForm').onsubmit = async (e) => {
+  e.preventDefault();
+  const f = new FormData(e.target);
+  const body = {title: f.get('title'), url: f.get('url'), kind: f.get('kind'), description: f.get('description')};
+  await j('/links', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
+  e.target.reset();
+  loadLinks();
+};
+
+loadOverview(); loadRally(); loadResults(); loadLinks();
+</script>
+</body>
+</html>

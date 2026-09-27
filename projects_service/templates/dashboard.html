@@ -1300,8 +1300,15 @@
         <div class="sidebar-header">
             <h1>Disaster Ops</h1>
             <p>Real-time Operations Dashboard</p>
+            <div style="display:inline-block;margin-top:10px;padding:4px 10px;border-radius:6px;background:#f59e0b;color:#1a1a2e;font-size:11px;font-weight:700;letter-spacing:.06em;">🧪 TRAINING BUILD — EXERCISE / TEST USE ONLY</div>
         </div>
         
+        <div id="wsProjectsBlock" style="margin-bottom:16px;padding:12px;border:1px solid #333;border-radius:8px;background:#16162a">
+            <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#e94560;margin-bottom:8px;">📁 Projects</div>
+            <div id="wsProjectsList" style="font-size:12px;color:#888;">loading…</div>
+            <a href="/projects" style="display:inline-block;margin-top:9px;font-size:11px;color:#e94560;">open project lane →</a>
+        </div>
+
         <div class="sidebar-tabs">
             <button class="sidebar-tab active" onclick="switchTab('incidents')" data-i18n="incidents">Incidents</button>
             <button class="sidebar-tab" onclick="switchTab('teams')" data-i18n="teams">Teams</button>
@@ -1310,6 +1317,7 @@
             <button class="sidebar-tab" onclick="switchTab('reports')" data-i18n="reports">Reports</button>
             <button class="sidebar-tab" onclick="switchTab('field-reports')">📊 Field Reports</button>
             <button class="sidebar-tab" onclick="window.location.href='/reports'">🏥 Reports &amp; Intelligence</button>
+            <button class="sidebar-tab" onclick="window.location.href='/projects'">📁 Projects</button>
             <button class="sidebar-tab admin-only" onclick="switchTab('manage')" id="manage-tab-btn" style="display:none" data-i18n="manage">Manage</button>
         </div>
         
@@ -5723,6 +5731,21 @@
             await loadUserInfo(); // Load user info first
             loadData();
         });
-    </script>
+    <script>
+function loadWsProjects(){
+  fetch('/api/ws').then(r=>r.json()).then(d=>{
+    var el=document.getElementById('wsProjectsList'); if(!el) return;
+    var ps=(d.projects||[]);
+    if(!ps.length){el.innerHTML='<span style="color:#666">none yet</span>';return;}
+    el.innerHTML=ps.map(function(p){
+      return '<a href="/ws/'+p.id+'" style="display:block;padding:4px 0;color:#ccc;text-decoration:none;">'
+        +p.name+'<span style="color:#666"> · '+p.counts.scenario_runs+' runs / '+p.counts.rally_points+' rally</span></a>';
+    }).join('');
+  }).catch(function(){var el=document.getElementById('wsProjectsList'); if(el) el.innerHTML='<span style="color:#666">offline</span>';});
+}
+document.addEventListener('DOMContentLoaded',loadWsProjects);
+setTimeout(loadWsProjects,800);
+</script>
+</script>
 </body>
 </html>

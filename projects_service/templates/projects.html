@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Projects — Training Build</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0f172a;color:#e2e8f0;padding:24px}
+  .wrap{max-width:1000px;margin:0 auto}
+  .top{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+  h1{font-size:1.3rem;font-weight:600}
+  .badge{padding:3px 9px;border-radius:6px;background:#f59e0b;color:#1a1a2e;font-size:10px;font-weight:700;letter-spacing:.06em}
+  .sub{color:#94a3b8;font-size:.82rem;margin-bottom:20px}
+  .card{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:16px;margin-bottom:12px;display:block;text-decoration:none;color:inherit}
+  .card:hover{border-color:#38bdf8}
+  .name{font-size:1.05rem;font-weight:600}
+  .meta{color:#94a3b8;font-size:.78rem;margin-top:4px}
+  .counts{display:flex;gap:16px;margin-top:12px;flex-wrap:wrap}
+  .c{background:#0f172a;border:1px solid #334155;border-radius:8px;padding:7px 11px;font-size:.76rem}
+  .c b{display:block;font-size:1.05rem;color:#7dd3fc}
+  .empty{color:#64748b;font-size:.9rem}
+  a.back{color:#7dd3fc;font-size:.8rem;text-decoration:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><h1>Projects</h1><span class="badge">🧪 TRAINING BUILD</span></div>
+  <div class="sub">Project / workstream lane only — scenario runs, rally points, field teams. Emergency incident feed lives in the operations dashboard.</div>
+  {% if projects %}
+    {% for p in projects %}
+    <a class="card" href="/ws/{{ p.id }}">
+      <div class="name">{{ p.name }}</div>
+      <div class="meta">{{ p.type }}{% if p.code %} · {{ p.code }}{% endif %}{% if p.region %} · {{ p.region }}{% endif %} · {{ p.status }}</div>
+      {% if p.objective %}<div class="meta">{{ p.objective }}</div>{% endif %}
+      <div class="counts">
+        <div class="c"><b>{{ p.counts.scenario_runs }}</b>scenario runs</div>
+        <div class="c"><b>{{ p.counts.rally_points }}</b>rally points</div>
+        <div class="c"><b>{{ p.counts.teams }}</b>teams</div>
+        <div class="c"><b>{{ p.counts.workstream_events }}</b>events</div>
+      </div>
+    </a>
+    {% endfor %}
+  {% else %}
+    <div class="empty">No projects yet. Create one from the API: <code>POST /api/ws</code>.</div>
+  {% endif %}
+  <p style="margin-top:18px"><a class="back" href="/dashboard">← Back to operations dashboard</a></p>
+</div>
+</body>
+</html>

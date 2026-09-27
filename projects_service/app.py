@@ -6,6 +6,7 @@ Designed for cPanel shared hosting
 
 import traceback
 from flask import Flask, request, jsonify, render_template, g, send_from_directory
+from migrations_ws import migrate_ws
 from flask_cors import CORS
 import sqlite3
 import requests
@@ -487,8 +488,137 @@ def init_db():
             ALTER TABLE users_new RENAME TO users;
         ''')
 
+    migrate_ws(conn)  # Part A boot lane (idempotent)
     conn.commit()
     conn.close()
+
+@app.route("/api/ws/<int:ws_id>/digest", methods=["GET"])
+def api_ws_digest(ws_id):
+    """Part E: ONE joined pod over the Part A needles (own DB)."""
+    db=get_db(); cur=db.cursor()
+    w=cur.execute("SELECT * FROM workstreams WHERE id=?",(ws_id,)).fetchone()
+    if not w: return jsonify({"error":"workstream not found"}),404
+    wc=[r[1] for r in cur.execute("PRAGMA table_info(workstreams)")]; wd=dict(zip(wc,w))
+    counts={}
+    for t in ("teams","incidents","scenario_runs","rally_points","workstream_events"):
+        try: counts[t]=cur.execute("SELECT COUNT(*) FROM %s WHERE workstream_id=?"%t,(ws_id,)).fetchone()[0]
+        except Exception: counts[t]=-1
+    top=cur.execute("SELECT id,type,severity,status FROM incidents WHERE workstream_id=? ORDER BY id DESC LIMIT 1",(ws_id,)).fetchone()
+    rp=cur.execute("SELECT id,name FROM rally_points WHERE workstream_id=? AND active=1 ORDER BY id DESC LIMIT 1",(ws_id,)).fetchone()
+    ev=cur.execute("SELECT id,type,incident_id,team_id,created_at FROM workstream_events WHERE workstream_id=? ORDER BY id DESC LIMIT 1",(ws_id,)).fetchone()
+    return jsonify({"workstream":wd,"counts":counts,
+                    "top_incident":dict(zip(("id","type","severity","status"),top)) if top else None,
+                    "active_rally":dict(zip(("id","name"),rp)) if rp else None,
+                    "latest_event":dict(zip(("id","type","incident_id","team_id","created_at"),ev)) if ev else None}),200
+
+@app.route('/ws/<int:ws_id>', methods=['GET'])
+def ws_page(ws_id):
+    """UI lane: paint the PROVEN digest door onto the role-painted ws_ui.html."""
+    import urllib.request
+    digest=None
+    try:
+        with urllib.request.urlopen("http://127.0.0.1:5004/api/ws/%d/digest"%ws_id, timeout=8) as r:
+            digest=json.load(r)
+    except Exception:
+        digest=None
+    return render_template('ws_ui.html', ws_id=ws_id, digest=digest)
+
+@app.route('/projects')
+def projects_page():
+    """Project lane: workstream/project items only (no emergency incident feed)."""
+    db=get_db(); cur=db.cursor()
+    rows=cur.execute("SELECT id,name,type,code,region,status,objective,started_at FROM workstreams "
+                     "WHERE is_active=1 ORDER BY id DESC").fetchall()
+    cols=["id","name","type","code","region","status","objective","started_at"]
+    out=[]
+    for r in rows:
+        d=dict(zip(cols,r)); ws=d["id"]
+        c={}
+        for t in ("scenario_runs","rally_points","teams","incidents","workstream_events"):
+            try: c[t]=cur.execute("SELECT COUNT(*) FROM %s WHERE workstream_id=?"%t,(ws,)).fetchone()[0]
+            except Exception: c[t]=0
+        d["counts"]=c
+        out.append(d)
+    return render_template('projects.html', projects=out)
+
+@app.route('/api/ws', methods=['GET'])
+def api_ws_list():
+    """Project lane: list active workstreams with per-lane counts."""
+    db=get_db(); cur=db.cursor()
+    rows=cur.execute("SELECT id,name,type,code,region,status FROM workstreams WHERE is_active=1 ORDER BY id DESC").fetchall()
+    cols=["id","name","type","code","region","status"]; out=[]
+    for r in rows:
+        d=dict(zip(cols,r)); ws=d["id"]; c={}
+        for t in ("scenario_runs","rally_points","teams","workstream_events"):
+            try: c[t]=cur.execute("SELECT COUNT(*) FROM %s WHERE workstream_id=?"%t,(ws,)).fetchone()[0]
+            except Exception: c[t]=0
+        d["counts"]=c; out.append(d)
+    return jsonify({"projects":out}),200
+
+@app.route('/api/ws/<int:ws_id>/rally-points', methods=['GET'])
+def api_ws_rally_list(ws_id):
+    """Rally points (NOT incident/POI points) for a workstream."""
+    db=get_db(); cur=db.cursor()
+    cols=[r[1] for r in cur.execute("PRAGMA table_info(rally_points)")]
+    rows=cur.execute("SELECT * FROM rally_points WHERE workstream_id=? ORDER BY id",(ws_id,)).fetchall()
+    return jsonify({"rally_points":[dict(zip(cols,r)) for r in rows]}),200
+
+@app.route('/api/ws/<int:ws_id>/rally-points', methods=['POST'])
+def api_ws_rally_create(ws_id):
+    """Add a rally point to a workstream."""
+    d=request.get_json(silent=True) or {}; db=get_db(); cur=db.cursor()
+    ws=cur.execute("SELECT id FROM workstreams WHERE id=?",(ws_id,)).fetchone()
+    if not ws: return jsonify({"error":"workstream not found"}),404
+    try:
+        cur.execute("INSERT INTO rally_points (workstream_id,name,category,lat,lng,radius_m,active,description) VALUES (?,?,?,?,?,?,1,?)",
+                    (ws_id,d.get("name","Rally"),d.get("category","rally"),d.get("lat"),d.get("lng"),
+                     d.get("radius_m",50),d.get("description")))
+        db.commit()
+        return jsonify({"id":cur.lastrowid,"name":d.get("name","Rally")}),201
+    except Exception as e: return jsonify({"error":str(e)}),500
+
+@app.route('/api/ws/<int:ws_id>/links', methods=['GET'])
+def api_ws_links_list(ws_id):
+    """Configurable links (to forms that may not exist yet)."""
+    db=get_db(); cur=db.cursor()
+    rows=cur.execute("SELECT id,title,url,kind,description FROM ws_links WHERE workstream_id=? AND is_active=1 ORDER BY id",(ws_id,)).fetchall()
+    return jsonify({"links":[{"id":r[0],"title":r[1],"url":r[2],"kind":r[3],"description":r[4]} for r in rows]}),200
+
+@app.route('/api/ws/<int:ws_id>/links', methods=['POST'])
+def api_ws_links_create(ws_id):
+    """Add a link (allowed to point at a form that does not exist yet)."""
+    d=request.get_json(silent=True) or {}; db=get_db(); cur=db.cursor()
+    ws=cur.execute("SELECT id FROM workstreams WHERE id=?",(ws_id,)).fetchone()
+    if not ws: return jsonify({"error":"workstream not found"}),404
+    if not d.get("title"): return jsonify({"error":"title required"}),400
+    cur.execute("INSERT INTO ws_links (workstream_id,title,url,kind,description,is_active,created_at) VALUES (?,?,?,?,?,1,datetime('now'))",
+                (ws_id,d.get("title"),d.get("url"),d.get("kind","form"),d.get("description")))
+    db.commit()
+    return jsonify({"id":cur.lastrowid,"title":d.get("title")}),201
+
+@app.route('/api/ws/<int:ws_id>/results', methods=['GET'])
+def api_ws_results(ws_id):
+    """Results / reporting rollup for a workstream."""
+    db=get_db(); cur=db.cursor()
+    ws=cur.execute("SELECT id,name,status,started_at FROM workstreams WHERE id=?",(ws_id,)).fetchone()
+    if not ws: return jsonify({"error":"workstream not found"}),404
+    def one(q,*a):
+        try: return cur.execute(q,a).fetchone()
+        except Exception: return None
+    inc_total=one("SELECT COUNT(*) FROM incidents WHERE workstream_id=?",ws_id)[0]
+    inc_crit=one("SELECT COUNT(*) FROM incidents WHERE workstream_id=? AND severity='critical'",ws_id)[0]
+    inc_res=one("SELECT COUNT(*) FROM incidents WHERE workstream_id=? AND status IN ('resolved','closed')",ws_id)[0]
+    runs=one("SELECT COUNT(*) FROM scenario_runs WHERE workstream_id=?",ws_id)[0]
+    runs_done=one("SELECT COUNT(*) FROM scenario_runs WHERE workstream_id=? AND status IN ('completed','done')",ws_id)[0]
+    rp=one("SELECT COUNT(*) FROM rally_points WHERE workstream_id=? AND active=1",ws_id)[0]
+    teams=one("SELECT COUNT(*) FROM teams WHERE workstream_id=?",ws_id)[0]
+    ev=one("SELECT COUNT(*) FROM workstream_events WHERE workstream_id=?",ws_id)[0]
+    by_type=cur.execute("SELECT type,COUNT(*) FROM incidents WHERE workstream_id=? GROUP BY type",(ws_id,)).fetchall() if one("SELECT 1 FROM incidents WHERE workstream_id=?",ws_id) else []
+    return jsonify({"workstream":{"id":ws[0],"name":ws[1],"status":ws[2],"started_at":ws[3]},
+                    "incidents":{"total":inc_total,"critical":inc_crit,"resolved":inc_res},
+                    "scenario_runs":{"total":runs,"completed":runs_done},
+                    "rally_points_active":rp,"teams_assigned":teams,"events":ev,
+                    "incidents_by_type":[{"type":r[0],"count":r[1]} for r in by_type]}),200
 
 def get_db():
     """Get database connection with WAL mode and timeout."""
