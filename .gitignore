@@ -75,3 +75,13 @@ lrcserver.md
 
 # Provisioning (contains default credentials)
 lrc_branch_seed.py
+
+# Local deployment / remote-sync scripts (contain internal host + credentials — never commit)
+sync_to_remote.sh
+sync_changes_only.sh
+sync_templates.sh
+deploy_to_remote.sh
+deploy_hdx_fix.sh
+setup_services.sh
+MANUAL_DEPLOYMENT.md
+SYNC_GUIDE.md

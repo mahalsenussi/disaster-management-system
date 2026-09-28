@@ -137,10 +137,13 @@ def migrate():
     print("9. Migrating incidents to default branch...")
     cursor.execute('UPDATE incidents SET branch_id = 1 WHERE branch_id IS NULL')
     
-    # 10. Create default admin user (password: CHANGEME)
+    # 10. Create initial admin user (no hardcoded default — random unless provided)
     print("10. Creating default admin user...")
     import bcrypt
-    password_hash = bcrypt.hashpw('CHANGEME'.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+    import os
+    import secrets
+    initial_pw = os.environ.get('ADMIN_INITIAL_PASSWORD') or secrets.token_urlsafe(18)
+    password_hash = bcrypt.hashpw(initial_pw.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
     cursor.execute('''
         INSERT OR IGNORE INTO users (id, username, password_hash, role, branch_id, region)
         VALUES (1, 'admin', ?, 'admin', NULL, NULL)
@@ -150,8 +153,10 @@ def migrate():
     conn.close()
     
     print("\n✅ Migration complete!")
-    print("Default admin: username='admin', password='CHANGEME'")
-    print("⚠️  CHANGE DEFAULT PASSWORD IN PRODUCTION!")
+    print("Initial admin: username='admin'")
+    print(f"Generated password: {initial_pw}")
+    print("⚠️  Store it in a secret manager and CHANGE IT immediately after first login.")
+    print("    (Set ADMIN_INITIAL_PASSWORD before running to choose your own.)")
 
 if __name__ == '__main__':
     migrate()

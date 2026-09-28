@@ -4,7 +4,7 @@
 
 Build a dynamic, interactive weather / sea-level / ocean-current monitoring map for Libya,
 reusing the data infrastructure already running on the emergency system server
-(<internal-host>, public `ev.onlineacademy.com.ly`). Accessible to outside users.
+(private host, public `ev.onlineacademy.com.ly`). Accessible to outside users.
 
 ## 2. Confirmed On-This-System Data Sources
 

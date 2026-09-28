@@ -1,0 +1,47 @@
+Copyright (c) 2026 Libyan Red Crescent (LRC)
+
+All rights reserved except as expressly granted below for Humanitarian Training Use.
+
+NOTICE ON SCOPE
+This project is the property of the Libyan Red Crescent. The terms below grant
+free access for humanitarian training, exercise and educational use. They are not
+an OSI-approved open-source licence, and they are not a public-domain dedication.
+
+1. GRANT — Humanitarian Training Use
+Permission is granted, free of charge, to any individual or organisation to use,
+copy, study, modify and distribute this software and its documentation for:
+  a. humanitarian training, drills, exercises and simulations;
+  b. emergency-management education and academic study;
+  c. non-commercial research supporting the above.
+
+2. ATTRIBUTION
+The above copyright notice and this permission notice must be retained in all
+copies or substantial portions of the Software.
+
+3. RESTRICTIONS
+  a. COMMERCIAL USE. The Software may not be used, sold, sublicensed, hosted for
+     fee, or otherwise commercialised without prior written permission from LRC.
+  b. ATTRIBUTION AND BRANDING. Redistribution must not imply endorsement of, or
+     official partnership with, LRC or the IFRC unless separately agreed in writing.
+  c. NUCLEAR / WEAPONS USE. The Software may not be used to plan, direct or
+     support any military, armed or weapons-related activity.
+  d. NO SUB-LICENSING of modified versions under different terms.
+  e. Removal or alteration of this notice, or of LRC authorship markings, is
+     prohibited.
+
+4. NO WARRANTY
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+OR OTHER DEALINGS IN THE SOFTWARE.
+
+5. DATA AND OPERATIONAL SAFETY
+This software coordinates emergency-response information. Testers and
+operators are responsible for validating data before operational use. The
+training build is provided for exercise and training environments only.
+
+6. THIRD-PARTY COMPONENTS
+Third-party dependencies remain under their own licences, as stated in the
+corresponding files. This notice applies only to LRC-authored material.

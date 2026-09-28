@@ -85,8 +85,8 @@ Architected from day one for the infrastructure realities of Libya.
 
 **Split architecture:**
 - Lightweight Flask frontend on cPanel shared hosting (local infrastructure)
-- Heavier backend (OSRM engine, ML pipeline, evaluation service) on Ubuntu server inside Libya at <internal-host>
-- Managed by systemd services, synced via SCP scripts
+- Heavier backend (OSRM engine, ML pipeline, evaluation service) on a private Ubuntu server (internal address omitted)
+- Managed by systemd services, synced via private deployment scripts
 - Fronted by Cloudflare tunnels for external access
 - Systemd `disaster-management.service` brings everything up on boot
 

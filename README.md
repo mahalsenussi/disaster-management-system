@@ -118,7 +118,6 @@ v2/
 ├── field_app/                   # Flutter field app
 ├── basic_flutter/               # Flutter legacy app
 ├── start_all.sh                 # boot evaluation service (+ .env)
-├── sync_to_remote.sh            # deploy to LAN/VPN server (<internal-host>)
 ├── disaster-management.service  # systemd unit
 └── README.md
 ```
@@ -189,8 +188,8 @@ CURRENTS_API_KEY, COPERNICUS_USERNAME, COPERNICUS_PASSWORD
 - **systemd:** `disaster-management.service` runs `start_all.sh` (loads `.env`, activates
   `.venv`, starts the evaluation service). Restart with
   `systemctl restart disaster-management`.
-- **Remote sync:** `./sync_to_remote.sh` pushes the project to `mahmoud@<internal-host>`
-  and restarts services (falls back from LAN to VPN address automatically).
+- **Deployment:** local deployment scripts (`sync_to_remote.sh`, `setup_services.sh`) are
+  intentionally **not** published — they contain environment-specific hosts and credentials.
 - **cPanel (Public App):** upload `public_app/` to `public_html/disaster/`, configure the
   Python app, and point `ENGINE_API_URL` at the engine service.
 
@@ -206,4 +205,10 @@ CURRENTS_API_KEY, COPERNICUS_USERNAME, COPERNICUS_PASSWORD
 
 ## License
 
-© 2026 Libyan Red Crescent Emergency Intelligence System
+**Copyright © 2026 Libyan Red Crescent (LRC) — all rights reserved.**
+
+Free to use, copy, study, modify and distribute for **humanitarian training, drills, exercises
+and emergency-management education only**. Commercial use, military/weapons use, and any
+suggestion of official LRC/IFRC endorsement require prior written permission.
+
+Full terms: see [`LICENSE`](LICENSE). Third-party dependencies keep their own licences.
